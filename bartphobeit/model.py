@@ -450,169 +450,71 @@ class ImprovedVietnameseVQAModel(nn.Module):
         # pooled: [batch, target_length, hidden_dim]
         return pooled
 
-# ✅ ENHANCED: Comprehensive evaluation with BLEU/ROUGE logging
-def compute_metrics(predictions, references_or_multi_answers, tokenizer=None):
-    """Enhanced compute_metrics that automatically detects multiple answers"""
+def compute_vqa_score_single(prediction, reference_answers):
+    """
+    Compute VQA score for single prediction against multiple reference answers
+    VQA Score = min(# humans that provided that answer / 3, 1.0)
     
-    # Check if we have multiple answers (list of lists) or single answers (list of strings)
-    if len(references_or_multi_answers) > 0 and isinstance(references_or_multi_answers[0], list):
-        # Multiple answers case
-        return compute_metrics_with_multiple_answers(predictions, references_or_multi_answers, tokenizer)
-    else:
-        # Single answer case (existing functionality)
-        
-        # Normalize answers
-        norm_preds = [normalize_vietnamese_answer(pred) for pred in predictions]
-        norm_refs = [normalize_vietnamese_answer(ref) for ref in references_or_multi_answers]
-        
-        metrics = {}
-        
-        # 1. Exact match accuracy
-        exact_matches = [pred == ref for pred, ref in zip(norm_preds, norm_refs)]
-        metrics['exact_accuracy'] = sum(exact_matches) / len(exact_matches)
-        
-        # 2. Fuzzy accuracy with edit distance
-        fuzzy_scores = []
-        for pred, ref in zip(norm_preds, norm_refs):
-            if pred == ref:
-                fuzzy_scores.append(1.0)
-            elif pred in ref or ref in pred:
-                fuzzy_scores.append(0.8)  # Partial credit for substring match
-            else:
-                similarity = SequenceMatcher(None, pred, ref).ratio()
-                fuzzy_scores.append(similarity)
-        
-        metrics['fuzzy_accuracy'] = sum(fuzzy_scores) / len(fuzzy_scores)
-        
-        # 3. Token-level F1 score
-        token_f1_scores = []
-        token_precisions = []
-        token_recalls = []
-        
-        for pred, ref in zip(norm_preds, norm_refs):
-            pred_tokens = set(pred.split())
-            ref_tokens = set(ref.split())
-            
-            if len(pred_tokens) == 0 and len(ref_tokens) == 0:
-                token_f1_scores.append(1.0)
-                token_precisions.append(1.0)
-                token_recalls.append(1.0)
-            elif len(pred_tokens) == 0:
-                token_f1_scores.append(0.0)
-                token_precisions.append(0.0)
-                token_recalls.append(0.0)
-            else:
-                common_tokens = pred_tokens.intersection(ref_tokens)
-                precision = len(common_tokens) / len(pred_tokens) if pred_tokens else 0
-                recall = len(common_tokens) / len(ref_tokens) if ref_tokens else 0
-                f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
-                
-                token_precisions.append(precision)
-                token_recalls.append(recall)
-                token_f1_scores.append(f1)
-        
-        metrics['token_precision'] = sum(token_precisions) / len(token_precisions)
-        metrics['token_recall'] = sum(token_recalls) / len(token_recalls)
-        metrics['token_f1'] = sum(token_f1_scores) / len(token_f1_scores)
-        
-        # 4. BLEU score with enhanced logging
-        bleu_scores = []
-        bleu_available = False
-        try:
-            from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
-            smoothing = SmoothingFunction().method4
-            bleu_available = True
-            
-            for pred, ref in zip(norm_preds, norm_refs):
-                pred_tokens = pred.split()
-                ref_tokens = ref.split()
-                
-                if len(ref_tokens) == 0:
-                    bleu_scores.append(0.0)
-                else:
-                    try:
-                        bleu = sentence_bleu([ref_tokens], pred_tokens, 
-                                           smoothing_function=smoothing)
-                        bleu_scores.append(bleu)
-                    except:
-                        bleu_scores.append(0.0)
-            
-            metrics['bleu'] = sum(bleu_scores) / len(bleu_scores)
-            
-            # Enhanced BLEU analysis for debugging
-            high_bleu_count = sum(1 for score in bleu_scores if score > 0.1)
-            zero_bleu_count = sum(1 for score in bleu_scores if score == 0.0)
-            
-            metrics['bleu_high_count'] = high_bleu_count
-            metrics['bleu_zero_count'] = zero_bleu_count
-            metrics['bleu_nonzero_ratio'] = (len(bleu_scores) - zero_bleu_count) / len(bleu_scores)
-            
-        except ImportError:
-            metrics['bleu'] = 0.0
-            metrics['bleu_available'] = False
-            print("⚠️  NLTK not available - BLEU score disabled")
-        
-        # 5. ROUGE-L score with enhanced logging
-        rouge_scores = []
-        rouge_available = False
-        try:
-            from rouge_score import rouge_scorer  # type: ignore
-            scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=False)
-            rouge_available = True
-            
-            for pred, ref in zip(norm_preds, norm_refs):
-                try:
-                    score = scorer.score(ref, pred)['rougeL'].fmeasure
-                    rouge_scores.append(score)
-                except:
-                    rouge_scores.append(0.0)
-            
-            metrics['rouge_l'] = sum(rouge_scores) / len(rouge_scores)
-            
-            # Enhanced ROUGE analysis
-            high_rouge_count = sum(1 for score in rouge_scores if score > 0.1)
-            zero_rouge_count = sum(1 for score in rouge_scores if score == 0.0)
-            
-            metrics['rouge_high_count'] = high_rouge_count
-            metrics['rouge_zero_count'] = zero_rouge_count
-            metrics['rouge_nonzero_ratio'] = (len(rouge_scores) - zero_rouge_count) / len(rouge_scores)
-            
-        except ImportError:
-            metrics['rouge_l'] = 0.0
-            metrics['rouge_available'] = False
-            print("⚠️  Rouge-score not available - ROUGE score disabled")
-        
-        # 6. Enhanced diagnostics for meaningless output detection
-        empty_pred_count = sum(1 for pred in norm_preds if len(pred.strip()) == 0)
-        repeated_pred_count = len(norm_preds) - len(set(norm_preds))  # How many predictions are duplicates
-        
-        metrics['empty_predictions'] = empty_pred_count
-        metrics['repeated_predictions'] = repeated_pred_count
-        metrics['unique_predictions'] = len(set(norm_preds))
-        
-        # Add counts for reference
-        metrics['total_samples'] = len(predictions)
-        metrics['exact_matches'] = sum(exact_matches)
-        
-        # Warning flags for debugging
-        if bleu_available and metrics['bleu'] < 0.01:
-            metrics['warning_low_bleu'] = True
-        if rouge_available and metrics['rouge_l'] < 0.01:
-            metrics['warning_low_rouge'] = True
-        if empty_pred_count > len(predictions) * 0.1:
-            metrics['warning_many_empty'] = True
-        if repeated_pred_count > len(predictions) * 0.5:
-            metrics['warning_repetitive'] = True
-        
-        return metrics
+    Args:
+        prediction: predicted answer (string)
+        reference_answers: list of reference answers (list of strings)
+    
+    Returns:
+        vqa_score: float between 0 and 1
+    """
+    if not reference_answers:
+        return 0.0
+    
+    # Normalize prediction and references
+    norm_pred = normalize_vietnamese_answer(prediction)
+    norm_refs = [normalize_vietnamese_answer(ref) for ref in reference_answers]
+    
+    # Count how many reference answers match the prediction
+    match_count = norm_refs.count(norm_pred)
+    
+    # VQA score formula: min(match_count / 3, 1.0)
+    vqa_score = min(match_count / 3.0, 1.0)
+    
+    return vqa_score
+
+def compute_vqa_score_batch(predictions, all_reference_answers_list):
+    """
+    Compute VQA scores for batch of predictions
+    
+    Args:
+        predictions: list of predicted answers
+        all_reference_answers_list: list of lists, each containing reference answers for one question
+    
+    Returns:
+        dict with VQA score metrics
+    """
+    vqa_scores = []
+    
+    for pred, ref_answers in zip(predictions, all_reference_answers_list):
+        vqa_score = compute_vqa_score_single(pred, ref_answers)
+        vqa_scores.append(vqa_score)
+    
+    metrics = {
+        'vqa_score': sum(vqa_scores) / len(vqa_scores) if vqa_scores else 0.0,
+        'vqa_scores_list': vqa_scores,
+        'vqa_perfect_count': sum(1 for score in vqa_scores if score == 1.0),
+        'vqa_zero_count': sum(1 for score in vqa_scores if score == 0.0),
+        'vqa_partial_count': sum(1 for score in vqa_scores if 0.0 < score < 1.0)
+    }
+    
+    return metrics
 
 def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list, tokenizer=None):
-    """Enhanced evaluation metrics supporting multiple correct answers (5 answers per question)"""
+    """Enhanced evaluation metrics supporting multiple correct answers with VQA score"""
     
     # Normalize predictions
     norm_preds = [normalize_vietnamese_answer(pred) for pred in predictions]
     
     metrics = {}
+    
+    # ✅ NEW: VQA Score - the standard VQA evaluation metric
+    vqa_metrics = compute_vqa_score_batch(predictions, all_correct_answers_list)
+    metrics.update(vqa_metrics)
     
     # 1. Multi-answer exact match accuracy (if prediction matches ANY of the 5 correct answers)
     multi_exact_matches = []
@@ -711,7 +613,34 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
         metrics['multi_bleu'] = 0.0
         print("⚠️  NLTK not available - Multi-reference BLEU score disabled")
     
-    # 5. Answer diversity analysis
+    # 5. ROUGE-L score with multiple references
+    rouge_scores = []
+    try:
+        from rouge_score import rouge_scorer
+        scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=False)
+        
+        for pred, correct_answers in zip(norm_preds, all_correct_answers_list):
+            norm_correct_answers = [normalize_vietnamese_answer(ans) for ans in correct_answers]
+            
+            # Compute ROUGE-L against each reference and take the maximum
+            rouge_scores_for_pred = []
+            for ref in norm_correct_answers:
+                try:
+                    score = scorer.score(ref, pred)['rougeL'].fmeasure
+                    rouge_scores_for_pred.append(score)
+                except:
+                    rouge_scores_for_pred.append(0.0)
+            
+            best_rouge = max(rouge_scores_for_pred) if rouge_scores_for_pred else 0.0
+            rouge_scores.append(best_rouge)
+        
+        metrics['multi_rouge_l'] = sum(rouge_scores) / len(rouge_scores)
+        
+    except ImportError:
+        metrics['multi_rouge_l'] = 0.0
+        print("⚠️  Rouge-score not available - Multi-reference ROUGE score disabled")
+    
+    # 6. Answer diversity analysis
     total_unique_answers = set()
     for correct_answers in all_correct_answers_list:
         norm_answers = [normalize_vietnamese_answer(ans) for ans in correct_answers]
@@ -719,6 +648,14 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     
     metrics['answer_vocabulary_size'] = len(total_unique_answers)
     metrics['avg_answers_per_question'] = sum(len(answers) for answers in all_correct_answers_list) / len(all_correct_answers_list)
+    
+    # 7. Enhanced VQA score analysis
+    vqa_score_distribution = {
+        'perfect_ratio': metrics['vqa_perfect_count'] / len(predictions),
+        'zero_ratio': metrics['vqa_zero_count'] / len(predictions),
+        'partial_ratio': metrics['vqa_partial_count'] / len(predictions)
+    }
+    metrics.update(vqa_score_distribution)
     
     # Add standard single-answer metrics for comparison (using first answer)
     first_answers = [correct_answers[0] if correct_answers else "" for correct_answers in all_correct_answers_list]
@@ -733,6 +670,49 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     
     return metrics
 
+def compute_metrics(predictions, references_or_multi_answers, tokenizer=None):
+    """Enhanced compute_metrics that automatically detects multiple answers and includes VQA score"""
+    
+    # Check if we have multiple answers (list of lists) or single answers (list of strings)
+    if len(references_or_multi_answers) > 0 and isinstance(references_or_multi_answers[0], list):
+        # Multiple answers case
+        return compute_metrics_with_multiple_answers(predictions, references_or_multi_answers, tokenizer)
+    else:
+        # Single answer case - also compute VQA score by treating single answer as list
+        single_answers_as_lists = [[ref] for ref in references_or_multi_answers]
+        multi_metrics = compute_metrics_with_multiple_answers(predictions, single_answers_as_lists, tokenizer)
+        
+        # Rename VQA score for single answer case
+        if 'vqa_score' in multi_metrics:
+            multi_metrics['single_answer_vqa_score'] = multi_metrics['vqa_score']
+        
+        # Also compute traditional single-answer metrics
+        norm_preds = [normalize_vietnamese_answer(pred) for pred in predictions]
+        norm_refs = [normalize_vietnamese_answer(ref) for ref in references_or_multi_answers]
+        
+        traditional_metrics = {}
+        
+        # 1. Exact match accuracy
+        exact_matches = [pred == ref for pred, ref in zip(norm_preds, norm_refs)]
+        traditional_metrics['exact_accuracy'] = sum(exact_matches) / len(exact_matches)
+        
+        # 2. Fuzzy accuracy with edit distance
+        fuzzy_scores = []
+        for pred, ref in zip(norm_preds, norm_refs):
+            if pred == ref:
+                fuzzy_scores.append(1.0)
+            elif pred in ref or ref in pred:
+                fuzzy_scores.append(0.8)  # Partial credit for substring match
+            else:
+                similarity = SequenceMatcher(None, pred, ref).ratio()
+                fuzzy_scores.append(similarity)
+        
+        traditional_metrics['fuzzy_accuracy'] = sum(fuzzy_scores) / len(fuzzy_scores)
+        
+        # Combine metrics
+        multi_metrics.update(traditional_metrics)
+        
+        return multi_metrics
 
 # Data augmentation functions
 def augment_question(question, augment_ratio=0.2):

@@ -381,10 +381,15 @@ class VQATrainer:
         return total_loss / num_batches
     
     def evaluate(self):
-        """Evaluate the model"""
+        """Enhanced evaluation with VQA score"""
+        # Import compute_metrics function
+        from bartphobeit.model import compute_metrics
+        
         self.model.eval()
         predictions = []
-        ground_truths = []
+        all_correct_answers = []
+        total_loss = 0
+        num_batches = 0
         
         progress_bar = tqdm(self.val_loader, desc="Evaluating")
         
@@ -395,7 +400,21 @@ class VQATrainer:
                     if isinstance(batch[key], torch.Tensor):
                         batch[key] = batch[key].to(self.device)
                 
-                # Generate predictions
+                # Calculate validation loss
+                try:
+                    loss_outputs = self.model(
+                        pixel_values=batch['pixel_values'],
+                        question_input_ids=batch['question_input_ids'],
+                        question_attention_mask=batch['question_attention_mask'],
+                        answer_input_ids=batch['answer_input_ids'],
+                        answer_attention_mask=batch['answer_attention_mask']
+                    )
+                    total_loss += loss_outputs.loss.item()
+                    num_batches += 1
+                except:
+                    pass  # Skip loss calculation if it fails
+                
+                # Generate predictions for evaluation
                 generated_ids = self.model(
                     pixel_values=batch['pixel_values'],
                     question_input_ids=batch['question_input_ids'],
@@ -408,53 +427,148 @@ class VQATrainer:
                 )
                 
                 predictions.extend(pred_texts)
-                ground_truths.extend(batch['answer_text'])
+                
+                # Collect all correct answers for VQA score computation
+                if 'all_correct_answers' in batch:
+                    all_correct_answers.extend(batch['all_correct_answers'])
+                else:
+                    # Fallback to single answer
+                    all_correct_answers.extend([[ans] for ans in batch['answer_text']])
+                
+                # Update progress bar
+                if num_batches > 0:
+                    progress_bar.set_postfix({'Val Loss': f"{total_loss/num_batches:.4f}"})
         
-        # Calculate metrics
-        metrics = self.evaluator.calculate_metrics(predictions, ground_truths)
+        # Calculate comprehensive metrics including VQA score
+        metrics = compute_metrics(predictions, all_correct_answers, self.model.decoder_tokenizer)
         
-        return metrics, predictions, ground_truths
+        # Add validation loss to metrics
+        if num_batches > 0:
+            metrics['val_loss'] = total_loss / num_batches
+        
+        # Enhanced metrics reporting
+        print(f"\nValidation Results:")
+        print(f"  VQA Score: {metrics.get('vqa_score', 0.0):.4f}")
+        print(f"  Multi Exact Accuracy: {metrics.get('multi_exact_accuracy', 0.0):.4f}")
+        print(f"  Multi Fuzzy Accuracy: {metrics.get('multi_fuzzy_accuracy', 0.0):.4f}")
+        print(f"  Multi Token F1: {metrics.get('multi_token_f1', 0.0):.4f}")
+        print(f"  Multi BLEU: {metrics.get('multi_bleu', 0.0):.4f}")
+        
+        # VQA score distribution analysis
+        if 'vqa_perfect_count' in metrics:
+            total_samples = metrics['total_samples']
+            print(f"  VQA Score Distribution:")
+            print(f"    Perfect (1.0): {metrics['vqa_perfect_count']}/{total_samples} ({metrics.get('perfect_ratio', 0)*100:.1f}%)")
+            print(f"    Partial (0<x<1): {metrics['vqa_partial_count']}/{total_samples} ({metrics.get('partial_ratio', 0)*100:.1f}%)")
+            print(f"    Zero (0.0): {metrics['vqa_zero_count']}/{total_samples} ({metrics.get('zero_ratio', 0)*100:.1f}%)")
+        
+        if 'val_loss' in metrics:
+            print(f"  Validation Loss: {metrics['val_loss']:.4f}")
+        
+        return metrics, predictions, all_correct_answers
     
     def train(self, num_epochs):
-        """Full training loop"""
-        best_f1 = 0
+        """Enhanced training loop with VQA score tracking"""
+        best_vqa_score = 0
+        best_multi_fuzzy = 0
         
         for epoch in range(num_epochs):
             print(f"\nEpoch {epoch + 1}/{num_epochs}")
-            print("-" * 50)
+            print("-" * 80)
             
             # Train
             train_loss = self.train_epoch()
             
-            # Evaluate
-            val_metrics, predictions, ground_truths = self.evaluate()
+            # Evaluate with VQA score
+            val_metrics, predictions, all_correct_answers = self.evaluate()
             
             # Learning rate scheduling
-            self.scheduler.step()
+            if hasattr(self, 'scheduler'):
+                if hasattr(self.scheduler, 'step'):
+                    if 'ReduceLROnPlateau' in str(type(self.scheduler)):
+                        # Use VQA score for plateau scheduling
+                        self.scheduler.step(val_metrics.get('vqa_score', 0))
+                    else:
+                        self.scheduler.step()
             
-            # Print results
-            print(f"Train Loss: {train_loss:.4f}")
-            print(f"Validation Metrics:")
-            print(f"  Accuracy: {val_metrics['accuracy']:.4f}")
-            print(f"  Precision: {val_metrics['precision']:.4f}")
-            print(f"  Recall: {val_metrics['recall']:.4f}")
-            print(f"  F1 Score: {val_metrics['f1_score']:.4f}")
+            # Print comprehensive results
+            print(f"\nTraining Results:")
+            print(f"  Train Loss: {train_loss:.4f}")
+            print(f"  VQA Score: {val_metrics.get('vqa_score', 0.0):.4f}")
+            print(f"  Multi Fuzzy Accuracy: {val_metrics.get('multi_fuzzy_accuracy', 0.0):.4f}")
+            print(f"  Multi Exact Accuracy: {val_metrics.get('multi_exact_accuracy', 0.0):.4f}")
+            print(f"  Multi Token F1: {val_metrics.get('multi_token_f1', 0.0):.4f}")
             
-            # Save best model
-            if val_metrics['f1_score'] > best_f1:
-                best_f1 = val_metrics['f1_score']
+            # Save best model based on VQA score (primary metric)
+            current_vqa_score = val_metrics.get('vqa_score', 0)
+            current_fuzzy_score = val_metrics.get('multi_fuzzy_accuracy', 0)
+            
+            if current_vqa_score > best_vqa_score:
+                best_vqa_score = current_vqa_score
                 torch.save(self.model.state_dict(), 'best_vqa_model.pth')
-                print(f"New best model saved with F1: {best_f1:.4f}")
-            
-            # Save predictions for analysis
-            if epoch == num_epochs - 1:  # Last epoch
+                print(f"🏆 New best VQA score model saved: {best_vqa_score:.4f}")
+                
+                # Save detailed results for best model
                 results = {
-                    'predictions': predictions,
-                    'ground_truths': ground_truths,
-                    'metrics': val_metrics
+                    'epoch': epoch + 1,
+                    'predictions': predictions[:100],  # Save first 100 for analysis
+                    'metrics': val_metrics,
+                    'model_path': 'best_vqa_model.pth'
                 }
-                with open('evaluation_results.json', 'w', encoding='utf-8') as f:
+                
+                with open('best_vqa_results.json', 'w', encoding='utf-8') as f:
                     json.dump(results, f, ensure_ascii=False, indent=2)
+            
+            # Also save best fuzzy accuracy model as backup
+            if current_fuzzy_score > best_multi_fuzzy:
+                best_multi_fuzzy = current_fuzzy_score
+                torch.save(self.model.state_dict(), 'best_fuzzy_model.pth')
+                print(f"💯 New best fuzzy accuracy model saved: {best_multi_fuzzy:.4f}")
+            
+            # Wandb logging if available
+            if hasattr(self, 'use_wandb') and self.use_wandb:
+                try:
+                    import wandb
+                    wandb.log({
+                        'epoch': epoch + 1,
+                        'train_loss': train_loss,
+                        'val_loss': val_metrics.get('val_loss', 0),
+                        'vqa_score': val_metrics.get('vqa_score', 0),
+                        'multi_exact_accuracy': val_metrics.get('multi_exact_accuracy', 0),
+                        'multi_fuzzy_accuracy': val_metrics.get('multi_fuzzy_accuracy', 0),
+                        'multi_token_f1': val_metrics.get('multi_token_f1', 0),
+                        'multi_bleu': val_metrics.get('multi_bleu', 0),
+                        'vqa_perfect_ratio': val_metrics.get('perfect_ratio', 0),
+                        'vqa_partial_ratio': val_metrics.get('partial_ratio', 0),
+                        'vqa_zero_ratio': val_metrics.get('zero_ratio', 0),
+                    })
+                except:
+                    pass
+            
+            # Save final epoch results
+            if epoch == num_epochs - 1:
+                final_results = {
+                    'final_epoch': epoch + 1,
+                    'predictions': predictions,
+                    'all_correct_answers': all_correct_answers,
+                    'metrics': val_metrics,
+                    'best_vqa_score': best_vqa_score,
+                    'best_multi_fuzzy': best_multi_fuzzy
+                }
+                
+                with open('final_evaluation_results.json', 'w', encoding='utf-8') as f:
+                    json.dump(final_results, f, ensure_ascii=False, indent=2)
+        
+        print(f"\n{'='*80}")
+        print(f"🎉 TRAINING COMPLETED! 🎉")
+        print(f"{'='*80}")
+        print(f"Best VQA Score achieved: {best_vqa_score:.4f}")
+        print(f"Best Multi Fuzzy Accuracy: {best_multi_fuzzy:.4f}")
+        print(f"Models saved:")
+        print(f"  - best_vqa_model.pth (VQA Score: {best_vqa_score:.4f})")
+        print(f"  - best_fuzzy_model.pth (Fuzzy Accuracy: {best_multi_fuzzy:.4f})")
+        
+        return best_vqa_score
 
 def prepare_data_from_dataframe(df):
     """Convert your existing dataframe format to questions list with multiple correct answers"""
