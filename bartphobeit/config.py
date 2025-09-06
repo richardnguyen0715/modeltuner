@@ -5,7 +5,7 @@ def get_improved_config():
     return {
         'vision_model': 'google/vit-base-patch16-224-in21k',
         'text_model': 'vinai/phobert-large',
-        'decoder_model': 'vinai/bartpho-syllable',
+        'decoder_model': 'vinai/bartpho-word',
         'hidden_dim': 1024,  # PhoBERT-large dimension
         'max_length': 128,
         'batch_size': 8,

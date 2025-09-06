@@ -1,3 +1,16 @@
 data/
 wandb/
 checkpoints/
+__pycache__/
+*.pyc
+*.pkl
+*.log
+*.csv
+*.h5
+*.ckpt
+.env
+.vscode/
+.idea/
+.DS_Store
+.ipynb_checkpoints/
+*.pth
