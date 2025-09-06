@@ -11,51 +11,60 @@ import warnings
 warnings.filterwarnings('ignore')
 
 def analyze_data_balance(questions):
-    """Analyze answer distribution for balance"""
+    """Analyze answer distribution for balance with multiple answers support"""
     from collections import Counter
     from bartphobeit.model import normalize_vietnamese_answer
     
-    answers = [normalize_vietnamese_answer(q['ground_truth']) for q in questions]
-    answer_counts = Counter(answers)
+    # Collect all answers (including all 5 per question)
+    all_answers = []
+    for q in questions:
+        if 'all_correct_answers' in q and q['all_correct_answers']:
+            # Add all 5 correct answers
+            all_answers.extend([normalize_vietnamese_answer(ans) for ans in q['all_correct_answers']])
+        else:
+            # Fallback to ground_truth
+            all_answers.append(normalize_vietnamese_answer(q['ground_truth']))
     
-    print(f"\nData Balance Analysis:")
-    print(f"  Total unique answers: {len(answer_counts)}")
+    answer_counts = Counter(all_answers)
+    
+    print(f"\nData Balance Analysis (Multiple Answers):")
+    print(f"  Total questions: {len(questions):,}")
+    print(f"  Total answer instances: {len(all_answers):,}")
+    print(f"  Average answers per question: {len(all_answers) / len(questions):.2f}")
+    print(f"  Unique answers: {len(answer_counts):,}")
     print(f"  Top 10 most common answers:")
     
     for answer, count in answer_counts.most_common(10):
-        percentage = (count / len(answers)) * 100
+        percentage = (count / len(all_answers)) * 100
         print(f"    '{answer}': {count} ({percentage:.2f}%)")
     
     # Check for severe imbalance
     most_common_count = answer_counts.most_common(1)[0][1]
-    imbalance_ratio = most_common_count / len(answers)
+    imbalance_ratio = most_common_count / len(all_answers)
     
-    if imbalance_ratio > 0.3:
+    if imbalance_ratio > 0.2:  # Lower threshold for multiple answers
         print(f"  ⚠️ Severe imbalance detected: {imbalance_ratio:.2f} of answers are the same")
     else:
-        print(f"  ✓ Data balance looks reasonable: {imbalance_ratio:.2f}")
+        print(f"  ✓ Data balance looks good: {imbalance_ratio:.2f}")
     
     return answer_counts
 
+
 def main():
-    """Enhanced main training function"""
+    """Enhanced main training function with multiple answers support"""
     
     # Load improved configuration
     config = get_improved_config()
     
-    print(f"Enhanced Vietnamese VQA Training")
+    print(f"Enhanced Vietnamese VQA Training with Multiple Correct Answers")
     print(f"Using device: {config['device']}")
-    print(f"Configuration:")
-    for key, value in config.items():
-        if key != 'device':
-            print(f"  {key}: {value}")
     
     # Load and prepare data
     print(f"\nLoading data...")
     df = pd.read_csv('/home/tgng/coding/BARTphoBEIT_imple/text/evaluate_60k_data_balanced.csv')
     questions = prepare_data_from_dataframe(df)
     
-    # Analyze data balance
+    # ✅ Enhanced data analysis for multiple answers
     analyze_data_balance(questions)
     
     # Split data
@@ -73,29 +82,34 @@ def main():
     answer_tokenizer = AutoTokenizer.from_pretrained(config['decoder_model'])
     feature_extractor = ViTFeatureExtractor.from_pretrained(config['vision_model'])
     
-    # Test data normalization
-    print(f"\nTesting answer normalization...")
-    test_answers = ["Con chim đang bay.", "con chim", "Chim bay trong trời", "Có nhiều người đang đi bộ"]
-    for ans in test_answers:
-        normalized = normalize_vietnamese_answer(ans)
-        print(f"  '{ans}' → '{normalized}'")
+    # ✅ Test multiple answer normalization
+    print(f"\nTesting multiple answer support...")
+    if train_questions and 'all_correct_answers' in train_questions[0]:
+        sample_answers = train_questions[0]['all_correct_answers']
+        print(f"Sample question: {train_questions[0]['question']}")
+        print(f"All 5 correct answers:")
+        for i, ans in enumerate(sample_answers, 1):
+            normalized = normalize_vietnamese_answer(ans)
+            print(f"  {i}. '{ans}' → '{normalized}'")
     
-    # Create enhanced datasets
-    print(f"\nCreating enhanced datasets with augmentation...")
+    # Create enhanced datasets with multiple answers support
+    print(f"\nCreating enhanced datasets with multiple correct answers...")
     train_dataset = EnhancedVietnameseVQADataset(
         train_questions, config['image_dir'], question_tokenizer, 
         answer_tokenizer, feature_extractor, config['max_length'],
         use_augmentation=config.get('use_data_augmentation', False),
-        augment_ratio=config.get('augment_ratio', 0.2)
+        augment_ratio=config.get('augment_ratio', 0.2),
+        use_multiple_answers=True  # ✅ Enable multiple answers
     )
-    train_dataset.set_training(True)  # Enable training mode
+    train_dataset.set_training(True)
     
     val_dataset = EnhancedVietnameseVQADataset(
         val_questions, config['image_dir'], question_tokenizer, 
         answer_tokenizer, feature_extractor, config['max_length'],
-        use_augmentation=False  # No augmentation for validation
+        use_augmentation=False,
+        use_multiple_answers=True  # ✅ Enable multiple answers
     )
-    val_dataset.set_training(False)  # Disable training mode
+    val_dataset.set_training(False)
     
     # Create data loaders with reduced num_workers to avoid issues
     print(f"\nCreating data loaders...")

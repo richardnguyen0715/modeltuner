@@ -4,19 +4,22 @@ import random
 from bartphobeit.model import augment_question
 
 class EnhancedVietnameseVQADataset(VietnameseVQADataset):
-    """Enhanced dataset with data augmentation"""
+    """Enhanced dataset with data augmentation and multiple correct answers support"""
     
     def __init__(self, questions, image_dir, question_tokenizer, answer_tokenizer, 
                  feature_extractor, max_length=128, transform=None, use_augmentation=False, 
-                 augment_ratio=0.2):
+                 augment_ratio=0.2, use_multiple_answers=True):
         super().__init__(questions, image_dir, question_tokenizer, answer_tokenizer, 
                         feature_extractor, max_length, transform)
         self.use_augmentation = use_augmentation
         self.augment_ratio = augment_ratio
-        self.is_training = True  # Add training flag for datasets
+        self.use_multiple_answers = use_multiple_answers
+        self.is_training = True
         
         if use_augmentation:
             print(f"Data augmentation enabled with ratio: {augment_ratio}")
+        if use_multiple_answers:
+            print(f"Multiple correct answers support enabled")
     
     def set_training(self, training=True):
         """Set training mode for data augmentation"""
@@ -31,11 +34,18 @@ class EnhancedVietnameseVQADataset(VietnameseVQADataset):
                 question_data['question'], self.augment_ratio
             )
         
+        # ✅ NEW: Random answer selection during training for better diversity
+        if self.use_multiple_answers and self.is_training and len(question_data.get('answers', [])) > 1:
+            import random
+            # Randomly select one of the 5 correct answers for training
+            selected_answer = random.choice(question_data['answers'])
+            question_data['ground_truth'] = selected_answer
+        
         # Get the original data structure from parent class
         return super(VietnameseVQADataset, self).__getitem__(idx, question_data)
     
     def __getitem__(self, idx, question_data=None):
-        """Override to handle custom question_data"""
+        """Override to handle custom question_data with multiple answers"""
         if question_data is None:
             question_data = self.questions[idx]
         
@@ -66,11 +76,11 @@ class EnhancedVietnameseVQADataset(VietnameseVQADataset):
             return_tensors='pt'
         )
         
-        # ✅ OPTIMIZED: Reduced answer max length for Vietnamese (32 -> 16)
+        # Use selected answer (or first answer if no selection made)
         answer = question_data['ground_truth']
         answer_encoding = self.answer_tokenizer(
             answer,
-            max_length=32,  # Reduced from 32 to 16 for Vietnamese optimization
+            max_length=32,
             padding='max_length',
             truncation=True,
             return_tensors='pt'
@@ -82,5 +92,6 @@ class EnhancedVietnameseVQADataset(VietnameseVQADataset):
             'question_attention_mask': question_encoding['attention_mask'].squeeze(0),
             'answer_input_ids': answer_encoding['input_ids'].squeeze(0),
             'answer_attention_mask': answer_encoding['attention_mask'].squeeze(0),
-            'answer_text': answer  # Keep original text for evaluation
+            'answer_text': answer,  # Current selected answer
+            'all_correct_answers': question_data.get('all_correct_answers', [answer])  # All 5 answers for evaluation
         }

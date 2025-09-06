@@ -8,7 +8,7 @@ def get_improved_config():
         'decoder_model': 'vinai/bartpho-word',
         'hidden_dim': 1024,  # PhoBERT-large dimension
         'max_length': 128,
-        'batch_size': 8,
+        'batch_size': 16,
         'num_epochs': 10,
         'image_dir': '/home/tgng/coding/modeltuner/data/preprocessed_images',
         'device': 'cuda' if torch.cuda.is_available() else 'cpu',

@@ -457,9 +457,7 @@ class VQATrainer:
                     json.dump(results, f, ensure_ascii=False, indent=2)
 
 def prepare_data_from_dataframe(df):
-    """Convert your existing dataframe format to questions list"""
-    # Filter out questions starting with "Mối quan hệ" as in your code
-    # df = df[~df['question'].str.startswith("Mối quan hệ")]
+    """Convert your existing dataframe format to questions list with multiple correct answers"""
     print(f"Dataframe len: {len(df)}")
     
     # Parse answers if they're string representations of lists
@@ -470,16 +468,20 @@ def prepare_data_from_dataframe(df):
             # fallback: wrap as single-element list
             df['answers'] = df['answers'].apply(lambda x: [x])
     
-    # Create questions list
+    # Create questions list with all 5 correct answers
     questions = []
     for idx, row in df.iterrows():
+        answers_list = row['answers'] if isinstance(row['answers'], list) else [row['answers']]
+        
         questions.append({
             'question_id': row.get('index', idx),
             'image_name': row['image_name'],
             'question': row['question'],
-            'answers': row['answers'],
-            'ground_truth': row['answers'][0] if row['answers'] else ""  # First answer as ground truth
+            'answers': answers_list,  # Keep all 5 answers
+            'ground_truth': answers_list[0] if answers_list else "",  # Primary answer for training
+            'all_correct_answers': answers_list  # All correct answers for evaluation
         })
     
     print(f"Loaded {len(questions)} questions from dataset")
+    print(f"Average answers per question: {sum(len(q['answers']) for q in questions) / len(questions):.2f}")
     return questions
