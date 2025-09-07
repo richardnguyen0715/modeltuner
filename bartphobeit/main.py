@@ -45,10 +45,10 @@ def analyze_data_balance(questions):
     imbalance_ratio = most_common_count / len(all_answers)
     
     if imbalance_ratio > 0.2:  # Lower threshold for multiple answers
-        print(f"  ⚠️ Severe imbalance detected: {imbalance_ratio:.2f} of answers are the same")
+        print(f"Severe imbalance detected: {imbalance_ratio:.2f} of answers are the same")
     else:
-        print(f"  ✓ Data balance looks good: {imbalance_ratio:.2f}")
-    
+        print(f"Data balance looks good: {imbalance_ratio:.2f}")
+
     return answer_counts
 
 
@@ -66,7 +66,7 @@ def main():
     df = pd.read_csv('/home/tgng/coding/BARTphoBEIT_imple/text/evaluate_60k_data_balanced.csv')
     questions = prepare_data_from_dataframe(df)
     
-    # ✅ Enhanced data analysis for multiple answers
+    # Data analysis for multiple answers
     analyze_data_balance(questions)
     
     # Split data
@@ -83,8 +83,8 @@ def main():
     question_tokenizer = AutoTokenizer.from_pretrained(config['text_model'])
     answer_tokenizer = AutoTokenizer.from_pretrained(config['decoder_model'])
     feature_extractor = ViTFeatureExtractor.from_pretrained(config['vision_model'])
-    
-    # ✅ Test multiple answer normalization
+
+    # Test multiple answer normalization
     print(f"\nTesting multiple answer support...")
     if train_questions and 'all_correct_answers' in train_questions[0]:
         sample_answers = train_questions[0]['all_correct_answers']
@@ -101,7 +101,7 @@ def main():
         answer_tokenizer, feature_extractor, config['max_length'],
         use_augmentation=config.get('use_data_augmentation', False),
         augment_ratio=config.get('augment_ratio', 0.2),
-        use_multiple_answers=True  # ✅ Enable multiple answers
+        use_multiple_answers=True  # Enable multiple answers
     )
     train_dataset.set_training(True)
     
@@ -109,7 +109,7 @@ def main():
         val_questions, config['image_dir'], question_tokenizer, 
         answer_tokenizer, feature_extractor, config['max_length'],
         use_augmentation=False,
-        use_multiple_answers=True  # ✅ Enable multiple answers
+        use_multiple_answers=True  # Enable multiple answers
     )
     val_dataset.set_training(False)
     
@@ -159,7 +159,7 @@ def main():
             print(f"  Loss: {outputs.loss.item():.4f}")
             print(f"  Logits shape: {outputs.logits.shape}")
     except Exception as e:
-        print(f"  ❌ Error in forward pass: {e}")
+        print(f"  Error in forward pass: {e}")
         import traceback
         traceback.print_exc()
         return
@@ -179,7 +179,7 @@ def main():
             print(f"  Sample prediction: '{pred_text}'")
             print(f"  Sample ground truth: '{test_batch['answer_text'][0]}'")
     except Exception as e:
-        print(f"  ❌ Error in inference: {e}")
+        print(f"  Error in inference: {e}")
         import traceback
         traceback.print_exc()
         return
@@ -206,19 +206,19 @@ def main():
         best_accuracy = trainer.train(config['num_epochs'])
         
         print(f"\n{'='*80}")
-        print(f"🎉 TRAINING COMPLETED SUCCESSFULLY! 🎉")
+        print(f"TRAINING COMPLETED SUCCESSFULLY!")
         print(f"{'='*80}")
         print(f"Best fuzzy accuracy achieved: {best_accuracy:.4f}")
         print(f"Model and checkpoints saved in current directory")
         print(f"Predictions saved for analysis")
         
     except KeyboardInterrupt:
-        print(f"\n⏹️  Training interrupted by user")
+        print(f"\nTraining interrupted by user")
         print(f"Saving current state...")
         trainer.save_checkpoint(trainer.global_step // len(train_loader), {}, is_best=False)
         
     except Exception as e:
-        print(f"\n❌ Error during training: {e}")
+        print(f"\nError during training: {e}")
         import traceback
         traceback.print_exc()
 

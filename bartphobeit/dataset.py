@@ -34,7 +34,6 @@ class EnhancedVietnameseVQADataset(VietnameseVQADataset):
                 question_data['question'], self.augment_ratio
             )
         
-        # ✅ NEW: Random answer selection during training for better diversity
         if self.use_multiple_answers and self.is_training and len(question_data.get('answers', [])) > 1:
             import random
             # Randomly select one of the 5 correct answers for training

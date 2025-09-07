@@ -156,15 +156,12 @@ class ImprovedVietnameseVQAModel(nn.Module):
         # Initialize with frozen encoders
         self.freeze_encoders()
         
-        # ✅ IMPROVED: Optimized pooling parameters for Vietnamese answers
         # Reduced target length from 32 to 16 for Vietnamese (most answers <10 tokens)
         self.pool_target_length = model_config.get('pool_target_length', 32)  # Reduced from 32
         
-        # ✅ Attention pooling with learnable queries
         self.pool_queries = nn.Parameter(torch.randn(self.pool_target_length, decoder_dim))
         self.pool_attn = nn.MultiheadAttention(decoder_dim, num_heads=8, batch_first=True)
         
-        # ✅ Learnable positional embeddings for pooled positions
         self.pool_pos_emb = nn.Embedding(self.pool_target_length, decoder_dim)
         
         # Initialize positional embeddings
@@ -317,7 +314,6 @@ class ImprovedVietnameseVQAModel(nn.Module):
                     print(f"Warning: Found {invalid_tokens.sum()} invalid token IDs. Clamping to valid range.")
                 answer_input_ids = torch.clamp(answer_input_ids, 0, vocab_size - 1)
             
-            # ✅ OPTIMIZED: Use attention pooling with positional embeddings
             decoder_seq_len = min(answer_input_ids.size(1), self.pool_target_length)  # Cap at target length
             pooled_encoder_states = self.create_pooled_representation(
                 encoder_states, combined_attention_mask, target_length=decoder_seq_len
@@ -406,14 +402,11 @@ class ImprovedVietnameseVQAModel(nn.Module):
             return generated_ids
     
     def create_pooled_representation(self, encoder_states, attention_mask, target_length=None):
-        """
-        ✅ IMPROVED: Attention pooling with learnable queries and positional embeddings
-        """
         batch_size, seq_len, hidden_dim = encoder_states.shape
         if target_length is None:
             target_length = self.pool_target_length
 
-        # ✅ Method 1: Adaptive pooling for different target lengths
+        # Method 1: Adaptive pooling for different target lengths
         if target_length != self.pool_target_length:
             # Use adaptive pooling for different lengths
             # Reshape for 1D adaptive pooling: [batch * hidden_dim, seq_len]
@@ -427,7 +420,7 @@ class ImprovedVietnameseVQAModel(nn.Module):
             
             return pooled
         
-        # ✅ Method 2: Attention pooling with learnable queries (preferred)
+        # Method 2: Attention pooling with learnable queries (preferred)
         # Prepare queries: expand learnable queries to batch
         queries = self.pool_queries.unsqueeze(0).expand(batch_size, -1, -1)  # [batch, target_length, hidden_dim]
         
@@ -512,7 +505,7 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     
     metrics = {}
     
-    # ✅ NEW: VQA Score - the standard VQA evaluation metric
+    # VQA Score - the standard VQA evaluation metric
     vqa_metrics = compute_vqa_score_batch(predictions, all_correct_answers_list)
     metrics.update(vqa_metrics)
     
@@ -611,7 +604,7 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
         
     except ImportError:
         metrics['multi_bleu'] = 0.0
-        print("⚠️  NLTK not available - Multi-reference BLEU score disabled")
+        print("NLTK not available - Multi-reference BLEU score disabled")
     
     # 5. ROUGE-L score with multiple references
     rouge_scores = []
@@ -638,7 +631,7 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
         
     except ImportError:
         metrics['multi_rouge_l'] = 0.0
-        print("⚠️  Rouge-score not available - Multi-reference ROUGE score disabled")
+        print("Rouge-score not available - Multi-reference ROUGE score disabled")
     
     # 6. Answer diversity analysis
     total_unique_answers = set()

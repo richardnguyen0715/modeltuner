@@ -7,3 +7,4 @@ rouge_score
 torchvision
 wandb
 pillow
+kagglehub

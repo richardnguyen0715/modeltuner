@@ -138,7 +138,7 @@ class VietnameseVQAModel(nn.Module):
         self.text_model = AutoModel.from_pretrained(model_config['text_model'])
         text_dim = self.text_model.config.hidden_size
         
-        # Text decoder (Vietnamese BART/BARTPho) - sử dụng MBart cho BARTPho
+        # Text decoder (Vietnamese BART/BARTPho)
         self.decoder_tokenizer = AutoTokenizer.from_pretrained(model_config['decoder_model'])
         self.text_decoder = MBartForConditionalGeneration.from_pretrained(model_config['decoder_model'])
         
@@ -146,7 +146,7 @@ class VietnameseVQAModel(nn.Module):
         hidden_dim = model_config.get('hidden_dim', 768)
         self.fusion_layer = MultimodalFusionLayer(vision_dim, text_dim, hidden_dim)
         
-        # Output projection - cập nhật cho phù hợp với MBart
+        # Output projection
         decoder_dim = self.text_decoder.config.d_model
         self.output_proj = nn.Linear(hidden_dim, decoder_dim)
         
@@ -186,7 +186,6 @@ class VietnameseVQAModel(nn.Module):
         decoder_inputs = self.output_proj(fused_features)
         
         if answer_input_ids is not None:  # Training mode
-            # FIXED: Create proper encoder representation that matches decoder expectations
             # Use the answer sequence length to avoid dimension mismatch
             target_seq_len = answer_input_ids.size(1)
             
@@ -506,7 +505,7 @@ class VQATrainer:
             if current_vqa_score > best_vqa_score:
                 best_vqa_score = current_vqa_score
                 torch.save(self.model.state_dict(), 'best_vqa_model.pth')
-                print(f"🏆 New best VQA score model saved: {best_vqa_score:.4f}")
+                print(f"New best VQA score model saved: {best_vqa_score:.4f}")
                 
                 # Save detailed results for best model
                 results = {
@@ -523,7 +522,7 @@ class VQATrainer:
             if current_fuzzy_score > best_multi_fuzzy:
                 best_multi_fuzzy = current_fuzzy_score
                 torch.save(self.model.state_dict(), 'best_fuzzy_model.pth')
-                print(f"💯 New best fuzzy accuracy model saved: {best_multi_fuzzy:.4f}")
+                print(f"New best fuzzy accuracy model saved: {best_multi_fuzzy:.4f}")
             
             # Wandb logging if available
             if hasattr(self, 'use_wandb') and self.use_wandb:
@@ -560,7 +559,7 @@ class VQATrainer:
                     json.dump(final_results, f, ensure_ascii=False, indent=2)
         
         print(f"\n{'='*80}")
-        print(f"🎉 TRAINING COMPLETED! 🎉")
+        print(f"TRAINING COMPLETED!")
         print(f"{'='*80}")
         print(f"Best VQA Score achieved: {best_vqa_score:.4f}")
         print(f"Best Multi Fuzzy Accuracy: {best_multi_fuzzy:.4f}")

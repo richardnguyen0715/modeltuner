@@ -248,7 +248,7 @@ class ImprovedVQATrainer:
         metrics['recall'] = np.mean(recalls)
         metrics['f1_score'] = np.mean(f1_scores)
         
-        # ✅ ENHANCED: More robust BLEU and ROUGE scoring with better error handling
+        # More robust BLEU and ROUGE scoring with better error handling
         if BLEU_ROUGE_AVAILABLE and self.config.get('calculate_bleu_rouge', True):
             try:
                 bleu_scores = {'bleu_1': [], 'bleu_2': [], 'bleu_3': [], 'bleu_4': []}
@@ -286,12 +286,12 @@ class ImprovedVQATrainer:
                 for key, scores in bleu_scores.items():
                     metrics[key] = np.mean(scores) if scores else 0.0
                     
-                    # ✅ Add diagnostic counts for BLEU
+                    # Add diagnostic counts for BLEU
                     zero_count = sum(1 for s in scores if s == 0.0)
                     metrics[f'{key}_zero_count'] = zero_count
                     metrics[f'{key}_nonzero_ratio'] = (len(scores) - zero_count) / len(scores) if scores else 0.0
-                
-                # ✅ FIXED: Consistent ROUGE key naming
+
+                # FIXED: Consistent ROUGE key naming
                 metrics['rouge1'] = np.mean(rouge_scores['rouge1']) if rouge_scores['rouge1'] else 0.0
                 metrics['rouge2'] = np.mean(rouge_scores['rouge2']) if rouge_scores['rouge2'] else 0.0
                 metrics['rougel'] = np.mean(rouge_scores['rougeL']) if rouge_scores['rougeL'] else 0.0  # Use 'rougel' consistently
@@ -307,7 +307,7 @@ class ImprovedVQATrainer:
                 print(f"✓ BLEU/ROUGE calculated successfully")
                 
             except Exception as e:
-                print(f"⚠️  Error calculating BLEU/ROUGE: {e}")
+                print(f"Error calculating BLEU/ROUGE: {e}")
                 # Set default values if calculation fails
                 for n in range(1, 5):
                     metrics[f'bleu_{n}'] = 0.0
@@ -315,7 +315,7 @@ class ImprovedVQATrainer:
                 metrics['rouge2'] = 0.0
                 metrics['rougel'] = 0.0
         else:
-            print(f"⚠️  BLEU/ROUGE calculation disabled or unavailable")
+            print(f"BLEU/ROUGE calculation disabled or unavailable")
         
         # Add counts
         metrics['exact_match_count'] = sum(exact_matches)
@@ -424,7 +424,7 @@ class ImprovedVQATrainer:
             print(f"    Recall: {val_metrics['recall']:.4f}")
             print(f"    F1 Score: {val_metrics['f1_score']:.4f}")
             
-            # ✅ FIXED: Safe access to BLEU/ROUGE metrics with default values
+            # Safe access to BLEU/ROUGE metrics with default values
             if val_metrics.get('bleu_1') is not None:
                 print(f"    BLEU-1: {val_metrics.get('bleu_1', 0.0):.4f}")
                 print(f"    BLEU-4: {val_metrics.get('bleu_4', 0.0):.4f}")
@@ -439,7 +439,7 @@ class ImprovedVQATrainer:
             else:
                 print(f"    ROUGE-L: N/A (rouge-score not available)")
             
-            # ✅ Enhanced diagnostic information for debugging
+            # Diagnostic information for debugging
             print(f"    Additional Diagnostics:")
             if 'exact_match_count' in val_metrics:
                 print(f"      Exact matches: {val_metrics['exact_match_count']}/{val_metrics['total_count']}")
@@ -465,7 +465,7 @@ class ImprovedVQATrainer:
                     'val_f1_score': val_metrics['f1_score']
                 }
                 
-                # ✅ Safely add BLEU/ROUGE metrics if available
+                # Safely add BLEU/ROUGE metrics if available
                 if val_metrics.get('bleu_1') is not None:
                     log_dict.update({
                         'val_bleu_1': val_metrics.get('bleu_1', 0.0),
@@ -588,7 +588,7 @@ class ImprovedVQATrainer:
                     'global_step': self.global_step
                 })
             
-            # ✅ ENHANCED: More frequent evaluation during early training for debugging
+            # More frequent evaluation during early training for debugging
             eval_freq = self.config.get('evaluate_every_n_steps', 1000)
             if epoch < 2:  # More frequent eval in first 2 epochs
                 eval_freq = min(eval_freq, 5000)
@@ -597,13 +597,13 @@ class ImprovedVQATrainer:
                 print(f"\nEvaluating at step {self.global_step}...")
                 val_metrics, predictions, ground_truths = self.evaluate_vqa()
                 
-                # ✅ Enhanced step-level logging for debugging
+                # Step-level logging for debugging
                 print(f"Step {self.global_step} metrics:")
                 print(f"  Accuracy: {val_metrics['accuracy']:.4f}")
                 print(f"  Fuzzy Accuracy: {val_metrics['fuzzy_accuracy']:.4f}")
                 print(f"  F1 Score: {val_metrics['f1_score']:.4f}")
                 
-                # ✅ BLEU/ROUGE diagnostic logging
+                # BLEU/ROUGE diagnostic logging
                 if val_metrics.get('bleu_1') is not None:
                     print(f"  BLEU-1: {val_metrics.get('bleu_1', 0.0):.4f} (zero count: {val_metrics.get('bleu_zero_count', 'N/A')})")
                 if val_metrics.get('rougel') is not None or val_metrics.get('rouge_l') is not None:
