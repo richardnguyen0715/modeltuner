@@ -9,9 +9,13 @@ from torch.utils.data import DataLoader
 import torch
 import warnings
 warnings.filterwarnings('ignore')
-print(torch.__version__)
-print(torch.version.cuda)
+
 print(torch.cuda.is_available())
+print(torch.cuda.device_count())
+print(torch.cuda.get_device_name(0))
+a = torch.rand(10,10).cuda()
+print(a)
+
 def analyze_data_balance(questions):
     """Analyze answer distribution for balance with multiple answers support"""
     from collections import Counter
@@ -63,7 +67,7 @@ def main():
     
     # Load and prepare data
     print(f"\nLoading data...")
-    df = pd.read_csv('/home/tgng/coding/BARTphoBEIT_imple/text/evaluate_60k_data_balanced.csv')
+    df = pd.read_csv('/root/modeltuner/modeltuner/data/text/evaluate_60k_data_balanced.csv')
     questions = prepare_data_from_dataframe(df)
     
     # ✅ Enhanced data analysis for multiple answers
