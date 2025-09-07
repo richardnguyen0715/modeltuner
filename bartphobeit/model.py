@@ -12,99 +12,292 @@ import unicodedata
 import random
 from difflib import SequenceMatcher
 
-class ImprovedMultimodalFusionLayer(nn.Module):
-    """Enhanced multimodal fusion with proper dimension alignment"""
+class MultiWayTransformerLayer(nn.Module):
+    """
+    Multiway Transformer layer theo paper BARTPhoBEiT
+    - Shared self-attention cho tất cả modalities
+    - Separate experts (FFNs) cho vision, language, và vision-language fusion
+    """
     
-    def __init__(self, vision_dim, text_dim, hidden_dim, dropout_rate=0.1):
+    def __init__(self, hidden_dim, num_heads=8, dropout_rate=0.1, is_fusion_layer=False):
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        self.is_fusion_layer = is_fusion_layer
+        
+        # Shared self-attention module
+        self.shared_attention = nn.MultiheadAttention(
+            hidden_dim, num_heads, dropout=dropout_rate, batch_first=True
+        )
+        self.attention_norm = nn.LayerNorm(hidden_dim)
+        
+        # Vision expert FFN
+        self.vision_expert = self._create_expert_ffn(hidden_dim, dropout_rate)
+        
+        # Language expert FFN
+        self.language_expert = self._create_expert_ffn(hidden_dim, dropout_rate)
+        
+        # Vision-Language expert FFN (chỉ cho fusion layers - 3 layers cuối)
+        if is_fusion_layer:
+            self.vision_language_expert = self._create_expert_ffn(hidden_dim, dropout_rate)
+            print(f"  Vision-Language expert added to fusion layer")
+        
+        self.expert_norm = nn.LayerNorm(hidden_dim)
+        self.dropout = nn.Dropout(dropout_rate)
+        
+        print(f"MultiWay layer: hidden_dim={hidden_dim}, fusion_layer={is_fusion_layer}")
+        
+    def _create_expert_ffn(self, hidden_dim, dropout_rate):
+        """Create expert FFN theo BART/Transformer architecture"""
+        return nn.Sequential(
+            nn.Linear(hidden_dim, hidden_dim * 4),
+            nn.GELU(),
+            nn.Dropout(dropout_rate),
+            nn.Linear(hidden_dim * 4, hidden_dim),
+            nn.Dropout(dropout_rate)
+        )
+    
+    def forward(self, x, modality_mask, attention_mask=None):
+        """
+        Args:
+            x: [batch_size, seq_len, hidden_dim] - Combined vision + text tokens
+            modality_mask: [batch_size, seq_len] - 0: vision, 1: language, 2: fusion
+            attention_mask: [batch_size, seq_len] - Attention mask for padding
+        """
+        batch_size, seq_len, hidden_dim = x.shape
+        
+        # 1. Shared self-attention
+        if attention_mask is not None:
+            # Convert attention mask: True for valid tokens, False for padding
+            key_padding_mask = ~attention_mask.bool()
+        else:
+            key_padding_mask = None
+        
+        attn_output, attn_weights = self.shared_attention(
+            x, x, x, key_padding_mask=key_padding_mask
+        )
+        
+        # Residual connection + Layer norm
+        x = self.attention_norm(x + self.dropout(attn_output))
+        
+        # 2. Route tokens to appropriate experts
+        expert_output = torch.zeros_like(x)
+        
+        # Process each sample in batch
+        for batch_idx in range(batch_size):
+            # Vision tokens -> vision expert
+            vision_mask = (modality_mask[batch_idx] == 0)
+            if vision_mask.any():
+                vision_tokens = x[batch_idx, vision_mask]  # [num_vision_tokens, hidden_dim]
+                if vision_tokens.numel() > 0:
+                    expert_output[batch_idx, vision_mask] = self.vision_expert(vision_tokens)
+            
+            # Language tokens -> language expert
+            language_mask = (modality_mask[batch_idx] == 1)
+            if language_mask.any():
+                language_tokens = x[batch_idx, language_mask]  # [num_lang_tokens, hidden_dim]
+                if language_tokens.numel() > 0:
+                    expert_output[batch_idx, language_mask] = self.language_expert(language_tokens)
+            
+            # Fusion tokens -> vision-language expert (nếu có)
+            if self.is_fusion_layer:
+                fusion_mask = (modality_mask[batch_idx] == 2)
+                if fusion_mask.any():
+                    fusion_tokens = x[batch_idx, fusion_mask]  # [num_fusion_tokens, hidden_dim]
+                    if fusion_tokens.numel() > 0:
+                        expert_output[batch_idx, fusion_mask] = self.vision_language_expert(fusion_tokens)
+        
+        # Residual connection + Layer norm
+        output = self.expert_norm(x + expert_output)
+        
+        return output, attn_weights
+
+class VQKDVisualTokenizer(nn.Module):
+    """
+    Vector Quantized Knowledge Distillation Visual Tokenizer
+    Theo paper BARTPhoBEiT - BEIT-2 visual tokenizer
+    """
+    
+    def __init__(self, vocab_size=8192, embed_dim=768, teacher_dim=768):
+        super().__init__()
+        self.vocab_size = vocab_size
+        self.embed_dim = embed_dim
+        self.teacher_dim = teacher_dim
+        # Codebook V ∈ R^{K×D}
+        self.codebook = nn.Embedding(vocab_size, embed_dim)
+        
+        # Teacher model (sử dụng pre-trained ViT)
+        self.teacher_model = ViTModel.from_pretrained("microsoft/beit-base-patch16-224")
+        for param in self.teacher_model.parameters():
+            param.requires_grad = False  # Freeze teacher
+        
+        # Decoder để reconstruct teacher features
+        self.decoder = nn.TransformerDecoder(
+            nn.TransformerDecoderLayer(
+                d_model=embed_dim,
+                nhead=8,
+                dim_feedforward=embed_dim * 4,
+                dropout=0.1,
+                batch_first=True
+            ),
+            num_layers=3
+        )
+        
+        # Output projection
+        self.output_proj = nn.Linear(embed_dim, teacher_dim)
+        
+        # Initialize codebook
+        nn.init.normal_(self.codebook.weight, std=0.02)
+        
+        print(f"VQ-KD Visual Tokenizer: vocab_size={vocab_size}, embed_dim={embed_dim}")
+    
+    def forward(self, images, return_loss=True):
+        batch_size = images.size(0)
+        
+        # 1. Get teacher features (frozen)
+        with torch.no_grad():
+            teacher_outputs = self.teacher_model(pixel_values=images)
+            teacher_features = teacher_outputs.last_hidden_state  # [batch, patches, teacher_dim]
+        
+        # 2. Encode patches -> h_i (sử dụng teacher features làm encoder features)
+        patch_features = teacher_features  # [batch, patches, teacher_dim]
+        
+        if patch_features.size(-1) != self.embed_dim:
+            # Project teacher features to embed_dim
+            patch_features = F.linear(patch_features, 
+                                    torch.randn(self.embed_dim, teacher_features.size(-1), 
+                                              device=patch_features.device) * 0.02)
+        
+        # 3. Vector Quantization: z_i = argmin_j ||ℓ2(h_i) - ℓ2(v_j)||_2
+        normalized_features = F.normalize(patch_features, dim=-1)  # ℓ2 normalize
+        normalized_codebook = F.normalize(self.codebook.weight, dim=-1)  # ℓ2 normalize
+        
+        # Compute distances and find nearest codebook entries
+        # [batch, patches, embed_dim] @ [embed_dim, vocab_size] -> [batch, patches, vocab_size]
+        similarities = torch.matmul(normalized_features, normalized_codebook.t())
+        indices = torch.argmax(similarities, dim=-1)  # [batch, patches]
+        
+        # Get quantized embeddings
+        quantized = self.codebook(indices)  # [batch, patches, embed_dim]
+        quantized_normalized = F.normalize(quantized, dim=-1)
+        
+        if not return_loss:
+            return quantized_normalized, indices
+        
+        # 4. VQ-KD Loss computation
+        # Decode quantized features
+        decoder_output = self.decoder(
+            quantized_normalized,  # Target sequence
+            quantized_normalized   # Memory sequence (self-attention)
+        )
+        
+        # Project to teacher dimension
+        reconstructed = self.output_proj(decoder_output)  # [batch, patches, teacher_dim]
+        reconstructed_normalized = F.normalize(reconstructed, dim=-1)
+        teacher_normalized = F.normalize(teacher_features, dim=-1)
+        
+        # VQ-KD Loss components
+        # 1. Cosine similarity loss: maximize cos(o_i, t_i)
+        cosine_loss = 1 - F.cosine_similarity(
+            reconstructed_normalized.view(-1, self.teacher_dim),
+            teacher_normalized.view(-1, self.teacher_dim),
+            dim=-1
+        ).mean()
+        
+        # 2. Commitment losses với stop gradient
+        commitment_loss = F.mse_loss(
+            normalized_features,  # sg[ℓ2(h_i)]
+            quantized_normalized.detach()  # ℓ2(v_{z_i})
+        )
+        
+        codebook_loss = F.mse_loss(
+            normalized_features.detach(),  # ℓ2(h_i)
+            quantized_normalized  # sg[ℓ2(v_{z_i})]
+        )
+        
+        # Total VQ-KD loss
+        total_loss = cosine_loss + commitment_loss + codebook_loss
+        
+        return quantized_normalized, indices, {
+            'vq_kd_loss': total_loss,
+            'cosine_loss': cosine_loss,
+            'commitment_loss': commitment_loss,
+            'codebook_loss': codebook_loss
+        }
+
+class MultiwayFusionLayer(nn.Module):
+    """
+    Enhanced multimodal fusion với Multiway Transformers
+    Thay thế ImprovedMultimodalFusionLayer
+    """
+    
+    def __init__(self, vision_dim, text_dim, hidden_dim, num_layers=6, dropout_rate=0.1):
         super().__init__()
         
-        # Ensure proper dimension alignment
         assert hidden_dim == text_dim, f"hidden_dim ({hidden_dim}) should match text_dim ({text_dim})"
         
-        # Dimension alignment - Critical for proper fusion
+        # Dimension alignment
         self.vision_proj = nn.Sequential(
-            nn.Linear(vision_dim, hidden_dim),  # 768 -> 1024
+            nn.Linear(vision_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.Dropout(dropout_rate)
         )
         
         self.text_proj = nn.Sequential(
-            nn.Linear(text_dim, hidden_dim),    # 1024 -> 1024 (identity but with norm)
+            nn.Linear(text_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.Dropout(dropout_rate)
         )
         
-        # Cross-attention layers
-        self.vision_to_text_attn = nn.MultiheadAttention(
-            hidden_dim, num_heads=8, dropout=dropout_rate, batch_first=True
-        )
-        self.text_to_vision_attn = nn.MultiheadAttention(
-            hidden_dim, num_heads=8, dropout=dropout_rate, batch_first=True
-        )
+        # Multiway Transformer layers
+        # 3 layer cuối sẽ có vision-language expert
+        self.multiway_layers = nn.ModuleList([
+            MultiWayTransformerLayer(
+                hidden_dim, 
+                num_heads=8,
+                dropout_rate=dropout_rate,
+                is_fusion_layer=(i >= num_layers - 3)  # 3 layers cuối có fusion expert
+            )
+            for i in range(num_layers)
+        ])
         
-        # Self-attention for final fusion
-        self.fusion_attn = nn.MultiheadAttention(
-            hidden_dim, num_heads=8, dropout=dropout_rate, batch_first=True
-        )
-        
-        # Layer normalization and dropout
-        self.vision_norm = nn.LayerNorm(hidden_dim)
-        self.text_norm = nn.LayerNorm(hidden_dim)
-        self.fusion_norm = nn.LayerNorm(hidden_dim)
-        self.dropout = nn.Dropout(dropout_rate)
-        
-        print(f"Fusion layer: vision {vision_dim} -> {hidden_dim}, text {text_dim} -> {hidden_dim}")
+        self.num_layers = num_layers
+        print(f"Multiway Fusion: {num_layers} layers, top 3 have vision-language experts")
         
     def forward(self, vision_features, text_features, text_attention_mask=None):
-        # Project to same dimension with proper alignment
+        batch_size = vision_features.size(0)
+        vision_patches = vision_features.size(1)
+        text_len = text_features.size(1)
+        
+        # Project features
         vision_proj = self.vision_proj(vision_features)  # [batch, patches, hidden_dim]
         text_proj = self.text_proj(text_features)        # [batch, seq_len, hidden_dim]
         
-        # Cross-attention: vision attends to text
-        vision_attended, _ = self.vision_to_text_attn(
-            vision_proj, text_proj, text_proj,
-            key_padding_mask=~text_attention_mask.bool() if text_attention_mask is not None else None
-        )
-        vision_attended = self.vision_norm(vision_attended + vision_proj)
-        vision_attended = self.dropout(vision_attended)
+        # Combine vision và text tokens
+        combined_features = torch.cat([vision_proj, text_proj], dim=1)  # [batch, patches+seq_len, hidden_dim]
         
-        # Cross-attention: text attends to vision  
-        text_attended, _ = self.text_to_vision_attn(
-            text_proj, vision_proj, vision_proj
-        )
-        text_attended = self.text_norm(text_attended + text_proj)
-        text_attended = self.dropout(text_attended)
+        # Create modality mask
+        # 0: vision, 1: language, 2: fusion (để dành cho later use)
+        modality_mask = torch.zeros(batch_size, vision_patches + text_len, dtype=torch.long, device=vision_features.device)
+        modality_mask[:, :vision_patches] = 0  # Vision tokens
+        modality_mask[:, vision_patches:] = 1  # Language tokens
         
-        # Concatenate attended features
-        combined_features = torch.cat([vision_attended, text_attended], dim=1)
-        
-        # Create attention mask for combined features
-        batch_size = vision_features.size(0)
-        vision_patches = vision_features.size(1)
-        
-        # Vision attention mask (all ones since no padding)
+        # Create attention mask
         vision_mask = torch.ones(batch_size, vision_patches, device=vision_features.device, dtype=torch.bool)
-        
-        # Combine masks
         if text_attention_mask is not None:
-            combined_mask = torch.cat([vision_mask, text_attention_mask.bool()], dim=1)
+            combined_attention_mask = torch.cat([vision_mask, text_attention_mask.bool()], dim=1)
         else:
-            text_len = text_features.size(1)
             text_mask = torch.ones(batch_size, text_len, device=text_features.device, dtype=torch.bool)
-            combined_mask = torch.cat([vision_mask, text_mask], dim=1)
+            combined_attention_mask = torch.cat([vision_mask, text_mask], dim=1)
         
-        # Self-attention for final fusion
-        fused_features, _ = self.fusion_attn(
-            combined_features, combined_features, combined_features,
-            key_padding_mask=~combined_mask
-        )
-        fused_features = self.fusion_norm(fused_features + combined_features)
-        fused_features = self.dropout(fused_features)
+        # Pass through Multiway Transformer layers
+        x = combined_features
+        for i, layer in enumerate(self.multiway_layers):
+            x, _ = layer(x, modality_mask, combined_attention_mask)
         
-        return fused_features, combined_mask
+        return x, combined_attention_mask
 
 class ImprovedVietnameseVQAModel(nn.Module):
-    """Enhanced Vietnamese VQA Model with proper BaseModelOutput handling"""
+    """Enhanced Vietnamese VQA Model với Multiway Transformers và VQ-KD"""
     
     def __init__(self, model_config):
         super().__init__()
@@ -122,60 +315,102 @@ class ImprovedVietnameseVQAModel(nn.Module):
         self.decoder_tokenizer = AutoTokenizer.from_pretrained(model_config['decoder_model'])
         self.text_decoder = MBartForConditionalGeneration.from_pretrained(model_config['decoder_model'])
         
-        # Enhanced fusion layer with proper alignment
+        # VQ-KD Visual Tokenizer
+        use_vqkd = model_config.get('use_vqkd', True)
+        if use_vqkd:
+            self.visual_tokenizer = VQKDVisualTokenizer(
+                vocab_size=model_config.get('visual_vocab_size', 8192),
+                embed_dim=vision_dim,
+                teacher_dim=vision_dim
+            )
+            print("VQ-KD Visual Tokenizer enabled")
+        else:
+            self.visual_tokenizer = None
+            print("VQ-KD Visual Tokenizer disabled")
+        
+        # Enhanced fusion layer với Multiway Transformers
         hidden_dim = model_config.get('hidden_dim', 1024)
         dropout_rate = model_config.get('dropout_rate', 0.1)
+        num_multiway_layers = model_config.get('num_multiway_layers', 6)
         
-        # Ensure dimensions are correct
         assert hidden_dim == text_dim, f"hidden_dim ({hidden_dim}) must match PhoBERT dim ({text_dim})"
         
-        self.fusion_layer = ImprovedMultimodalFusionLayer(
-            vision_dim, text_dim, hidden_dim, dropout_rate
+        self.fusion_layer = MultiwayFusionLayer(
+            vision_dim, text_dim, hidden_dim, num_multiway_layers, dropout_rate
         )
         
-        # Output projection to normalize distribution for BART decoder
-        decoder_dim = self.text_decoder.config.d_model  # Should be 1024 for BARTPho
+        # Output projection
+        decoder_dim = self.text_decoder.config.d_model
         assert decoder_dim == hidden_dim, f"Decoder dim ({decoder_dim}) must match hidden dim ({hidden_dim})"
         
-        # Enhanced projection layer for proper BART encoding
         self.output_proj = nn.Sequential(
             nn.Linear(hidden_dim, decoder_dim),
             nn.LayerNorm(decoder_dim),
             nn.Dropout(dropout_rate),
-            nn.Linear(decoder_dim, decoder_dim),  # Additional transformation
+            nn.Linear(decoder_dim, decoder_dim),
             nn.LayerNorm(decoder_dim)
         )
+        
+        # Masking strategy
+        self.use_masking = model_config.get('use_unified_masking', False)
+        self.text_mask_ratio = model_config.get('text_mask_ratio', 0.15)
+        self.multimodal_text_mask_ratio = model_config.get('multimodal_text_mask_ratio', 0.5)
+        self.vision_mask_ratio = model_config.get('vision_mask_ratio', 0.4)
         
         # Label smoothing loss
         self.label_smoothing = model_config.get('label_smoothing', 0.1)
         
-        # Debugging flags
-        self._debug_step = 0
-        self._debug_freq = 100  # Debug every 100 steps
-        
         # Initialize with frozen encoders
         self.freeze_encoders()
         
-        # Reduced target length from 32 to 16 for Vietnamese (most answers <10 tokens)
-        self.pool_target_length = model_config.get('pool_target_length', 32)  # Reduced from 32
-        
+        # Pool target length
+        self.pool_target_length = model_config.get('pool_target_length', 32)
         self.pool_queries = nn.Parameter(torch.randn(self.pool_target_length, decoder_dim))
         self.pool_attn = nn.MultiheadAttention(decoder_dim, num_heads=8, batch_first=True)
-        
         self.pool_pos_emb = nn.Embedding(self.pool_target_length, decoder_dim)
         
-        # Initialize positional embeddings
+        # Initialize
         nn.init.normal_(self.pool_pos_emb.weight, std=0.02)
         nn.init.normal_(self.pool_queries, std=0.02)
+        
+        # Debug
+        self._debug_step = 0
+        self._debug_freq = 100
 
-        print(f"Enhanced Model components:")
+        print(f"Enhanced BARTPhoBEiT Model:")
         print(f"  Vision model: {model_config['vision_model']} (dim: {vision_dim})")
         print(f"  Text model: {model_config['text_model']} (dim: {text_dim})")
         print(f"  Decoder model: {model_config['decoder_model']} (dim: {decoder_dim})")
         print(f"  Hidden dim: {hidden_dim}")
-        print(f"  Dropout rate: {dropout_rate}")
+        print(f"  Multiway layers: {num_multiway_layers}")
+        print(f"  VQ-KD enabled: {use_vqkd}")
+        print(f"  Unified masking: {self.use_masking}")
         print(f"  Label smoothing: {self.label_smoothing}")
-        print(f"  Pool target length: {self.pool_target_length} (optimized for Vietnamese)")
+    
+    def apply_masking(self, tokens, mask_ratio=0.15, is_vision=False):
+        """Apply masking strategy theo paper"""
+        if not self.training or not self.use_masking:
+            return tokens, None
+        
+        batch_size, seq_len = tokens.shape[:2]
+        
+        if is_vision:
+            # Block-wise masking cho vision patches
+            mask = torch.rand(batch_size, seq_len, device=tokens.device) < mask_ratio
+            # TODO: Implement block-wise strategy thay vì random
+        else:
+            # Random masking cho text
+            mask = torch.rand(batch_size, seq_len, device=tokens.device) < mask_ratio
+        
+        masked_tokens = tokens.clone()
+        if not is_vision:
+            # Replace với mask token cho text
+            masked_tokens[mask] = self.decoder_tokenizer.mask_token_id
+        else:
+            # Zero out cho vision patches
+            masked_tokens[mask] = 0
+        
+        return masked_tokens, mask
     
     def freeze_encoders(self):
         """Freeze all encoder parameters"""
@@ -195,7 +430,7 @@ class ImprovedVietnameseVQAModel(nn.Module):
         """Enhanced partial unfreezing with better layer detection"""
         unfrozen_params = 0
         
-        # Check PhoBERT structure with multiple possible layer names
+        # PhoBERT unfreezing
         print(f"\nPhoBERT structure analysis:")
         phobert_layers = None
         
@@ -208,17 +443,14 @@ class ImprovedVietnameseVQAModel(nn.Module):
                 print(f"  Found encoder.layers with {len(phobert_layers)} layers")
         
         if phobert_layers:
-            # Unfreeze last N layers
             for i, layer in enumerate(phobert_layers[-unfreeze_last_n_layers:], len(phobert_layers)-unfreeze_last_n_layers):
                 layer_params = sum(p.numel() for p in layer.parameters())
                 for param in layer.parameters():
                     param.requires_grad = True
                     unfrozen_params += param.numel()
                 print(f"    Unfrozen PhoBERT layer {i}: {layer_params:,} params")
-        else:
-            print(f"  No encoder layers found in PhoBERT")
         
-        # Check ViT structure with multiple possible layer names
+        # ViT unfreezing
         print(f"\nViT structure analysis:")
         vit_layers = None
         
@@ -231,27 +463,24 @@ class ImprovedVietnameseVQAModel(nn.Module):
                 print(f"  Found encoder.layers with {len(vit_layers)} layers")
         
         if vit_layers:
-            # Unfreeze last N layers
             for i, layer in enumerate(vit_layers[-unfreeze_last_n_layers:], len(vit_layers)-unfreeze_last_n_layers):
                 layer_params = sum(p.numel() for p in layer.parameters())
                 for param in layer.parameters():
                     param.requires_grad = True
                     unfrozen_params += param.numel()
                 print(f"    Unfrozen ViT layer {i}: {layer_params:,} params")
-        else:
-            print(f"  No encoder layers found in ViT")
         
-        # Always unfreeze the pooler and layer norms
+        # Always unfreeze pooler and layer norms
         pooler_params = 0
         for name, param in self.text_model.named_parameters():
             if any(keyword in name.lower() for keyword in ['pooler', 'layernorm', 'layer_norm']):
-                if not param.requires_grad:  # Only count if wasn't already unfrozen
+                if not param.requires_grad:
                     pooler_params += param.numel()
                 param.requires_grad = True
         
         for name, param in self.vision_model.named_parameters():
             if any(keyword in name.lower() for keyword in ['pooler', 'layernorm', 'layer_norm']):
-                if not param.requires_grad:  # Only count if wasn't already unfrozen
+                if not param.requires_grad:
                     pooler_params += param.numel()
                 param.requires_grad = True
         
@@ -259,13 +488,10 @@ class ImprovedVietnameseVQAModel(nn.Module):
         
         print(f"\nPartial unfreezing summary:")
         print(f"  Total unfrozen parameters: {unfrozen_params:,}")
-        print(f"  Pooler/LayerNorm parameters: {pooler_params:,}")
         print(f"  Last {unfreeze_last_n_layers} layers unfrozen successfully")
     
     def create_encoder_outputs(self, encoder_states):
         """Create proper encoder outputs for MBART decoder"""
-        # MBART expects encoder outputs without explicit attention mask
-        # The attention mask handling is done internally by the model
         return BaseModelOutput(
             last_hidden_state=encoder_states,
             hidden_states=None,
@@ -273,14 +499,30 @@ class ImprovedVietnameseVQAModel(nn.Module):
         )
     
     def forward(self, pixel_values, question_input_ids, question_attention_mask, 
-                answer_input_ids=None, answer_attention_mask=None):
+                answer_input_ids=None, answer_attention_mask=None, is_multimodal=True):
         
         batch_size = pixel_values.size(0)
         self._debug_step += 1
         
-        # Encode image
+        # Encode image với VQ-KD nếu có
         vision_outputs = self.vision_model(pixel_values=pixel_values)
         vision_features = vision_outputs.last_hidden_state  # [batch, patches, 768]
+        
+        vq_losses = {}
+        if self.visual_tokenizer is not None and self.training:
+            # Apply VQ-KD visual tokenization
+            quantized_vision, visual_indices, vq_loss_dict = self.visual_tokenizer(
+                pixel_values, return_loss=True
+            )
+            # Use quantized features for downstream processing
+            vision_features = quantized_vision
+            vq_losses = vq_loss_dict
+        
+        # Apply vision masking
+        if self.use_masking and self.training:
+            vision_features, vision_mask = self.apply_masking(
+                vision_features, self.vision_mask_ratio, is_vision=True
+            )
         
         # Encode question
         text_outputs = self.text_model(
@@ -289,13 +531,26 @@ class ImprovedVietnameseVQAModel(nn.Module):
         )
         text_features = text_outputs.last_hidden_state  # [batch, seq_len, 1024]
         
-        # Enhanced multimodal fusion
+        # Apply text masking
+        if self.use_masking and self.training:
+            mask_ratio = self.multimodal_text_mask_ratio if is_multimodal else self.text_mask_ratio
+            masked_question_ids, text_mask = self.apply_masking(
+                question_input_ids, mask_ratio, is_vision=False
+            )
+            # Re-encode với masked tokens
+            masked_text_outputs = self.text_model(
+                input_ids=masked_question_ids,
+                attention_mask=question_attention_mask
+            )
+            text_features = masked_text_outputs.last_hidden_state
+        
+        # Multiway Transformer fusion
         fused_features, combined_attention_mask = self.fusion_layer(
             vision_features, text_features, question_attention_mask
-        )  # [batch, combined_len, 1024], [batch, combined_len]
+        )
         
         # Project features for BART decoder
-        encoder_states = self.output_proj(fused_features)  # [batch, combined_len, 1024]
+        encoder_states = self.output_proj(fused_features)
         
         # Debug logging
         if self.training and self._debug_step % self._debug_freq == 0:
@@ -304,33 +559,27 @@ class ImprovedVietnameseVQAModel(nn.Module):
             print(f"  Text features: {text_features.shape}")
             print(f"  Fused features: {fused_features.shape}")
             print(f"  Encoder states: {encoder_states.shape}")
+            if vq_losses:
+                print(f"  VQ-KD loss: {vq_losses.get('vq_kd_loss', 0):.4f}")
         
         if answer_input_ids is not None:  # Training mode
             # Validate token IDs
             vocab_size = self.text_decoder.config.vocab_size
             invalid_tokens = (answer_input_ids >= vocab_size) | (answer_input_ids < 0)
             if invalid_tokens.any():
-                if self._debug_step % self._debug_freq == 0:
-                    print(f"Warning: Found {invalid_tokens.sum()} invalid token IDs. Clamping to valid range.")
                 answer_input_ids = torch.clamp(answer_input_ids, 0, vocab_size - 1)
             
-            decoder_seq_len = min(answer_input_ids.size(1), self.pool_target_length)  # Cap at target length
+            decoder_seq_len = min(answer_input_ids.size(1), self.pool_target_length)
             pooled_encoder_states = self.create_pooled_representation(
                 encoder_states, combined_attention_mask, target_length=decoder_seq_len
-            )  # [batch, decoder_seq_len, 1024]
+            )
             
-            if self.training and self._debug_step % self._debug_freq == 0:
-                print(f"  Pooled encoder states: {pooled_encoder_states.shape}")
-                print(f"  Answer input ids: {answer_input_ids.shape}")
-                print(f"  Target length optimized: {decoder_seq_len}")
-            
-            # Create proper encoder outputs
             encoder_outputs = self.create_encoder_outputs(pooled_encoder_states)
             
             if self.label_smoothing > 0:
-                # Custom loss with label smoothing
+                # Custom loss with label smoothing + VQ-KD loss
                 decoder_outputs = self.text_decoder(
-                    input_ids=answer_input_ids[:, :decoder_seq_len],  # Truncate to match encoder
+                    input_ids=answer_input_ids[:, :decoder_seq_len],
                     attention_mask=answer_attention_mask[:, :decoder_seq_len] if answer_attention_mask is not None else None,
                     encoder_outputs=encoder_outputs
                 )
@@ -339,12 +588,18 @@ class ImprovedVietnameseVQAModel(nn.Module):
                 shift_logits = logits[..., :-1, :].contiguous()
                 shift_labels = answer_input_ids[:, 1:decoder_seq_len].contiguous()
                 
-                loss = F.cross_entropy(
+                # Main generation loss
+                generation_loss = F.cross_entropy(
                     shift_logits.view(-1, shift_logits.size(-1)),
                     shift_labels.view(-1),
                     ignore_index=self.decoder_tokenizer.pad_token_id,
                     label_smoothing=self.label_smoothing
                 )
+                
+                # Total loss = generation loss + VQ-KD loss
+                total_loss = generation_loss
+                if vq_losses and 'vq_kd_loss' in vq_losses:
+                    total_loss = total_loss + 0.1 * vq_losses['vq_kd_loss']  # Weight VQ-KD loss
                 
                 # Calculate token accuracy
                 with torch.no_grad():
@@ -354,18 +609,21 @@ class ImprovedVietnameseVQAModel(nn.Module):
                     token_accuracy = correct_predictions.sum().float() / mask.sum().float() if mask.sum() > 0 else 0.0
                 
                 if self.training and self._debug_step % self._debug_freq == 0:
-                    print(f"  Loss: {loss.item():.4f}, Token accuracy: {token_accuracy:.4f}")
+                    print(f"  Generation loss: {generation_loss.item():.4f}")
+                    print(f"  Total loss: {total_loss.item():.4f}")
+                    print(f"  Token accuracy: {token_accuracy:.4f}")
                 
                 class CustomDecoderOutput:
-                    def __init__(self, loss, logits, token_accuracy=None):
+                    def __init__(self, loss, logits, token_accuracy=None, vq_losses=None):
                         self.loss = loss
                         self.logits = logits
                         self.token_accuracy = token_accuracy
+                        self.vq_losses = vq_losses or {}
                 
-                return CustomDecoderOutput(loss, logits, token_accuracy)
+                return CustomDecoderOutput(total_loss, logits, token_accuracy, vq_losses)
             
             else:
-                # Standard loss
+                # Standard loss + VQ-KD loss
                 decoder_outputs = self.text_decoder(
                     input_ids=answer_input_ids[:, :decoder_seq_len],
                     attention_mask=answer_attention_mask[:, :decoder_seq_len] if answer_attention_mask is not None else None,
@@ -373,22 +631,22 @@ class ImprovedVietnameseVQAModel(nn.Module):
                     labels=answer_input_ids[:, :decoder_seq_len]
                 )
                 
-                if self.training and self._debug_step % self._debug_freq == 0:
-                    print(f"  Standard loss: {decoder_outputs.loss.item():.4f}")
+                # Add VQ-KD loss
+                if vq_losses and 'vq_kd_loss' in vq_losses:
+                    decoder_outputs.loss = decoder_outputs.loss + 0.1 * vq_losses['vq_kd_loss']
                 
                 return decoder_outputs
             
         else:  # Inference mode
-            # For generation, use optimized target length
             pooled_encoder_states = self.create_pooled_representation(
                 encoder_states, combined_attention_mask, target_length=self.pool_target_length
-            )  # [batch, pool_target_length, 1024]
+            )
             
             encoder_outputs = self.create_encoder_outputs(pooled_encoder_states)
             
             generated_ids = self.text_decoder.generate(
                 encoder_outputs=encoder_outputs,
-                max_length=self.pool_target_length,  # Use optimized length
+                max_length=self.pool_target_length,
                 min_length=2,
                 num_beams=4,
                 early_stopping=True,
@@ -406,66 +664,37 @@ class ImprovedVietnameseVQAModel(nn.Module):
         if target_length is None:
             target_length = self.pool_target_length
 
-        # Method 1: Adaptive pooling for different target lengths
-        if target_length != self.pool_target_length:
-            # Use adaptive pooling for different lengths
-            # Reshape for 1D adaptive pooling: [batch * hidden_dim, seq_len]
-            reshaped = encoder_states.transpose(1, 2).contiguous()  # [batch, hidden_dim, seq_len]
-            reshaped = reshaped.view(batch_size * hidden_dim, seq_len)  # [batch * hidden_dim, seq_len]
-            
-            # Apply adaptive average pooling
-            pooled = F.adaptive_avg_pool1d(reshaped.unsqueeze(1), target_length).squeeze(1)
-            # Reshape back: [batch, hidden_dim, target_length] -> [batch, target_length, hidden_dim]
-            pooled = pooled.view(batch_size, hidden_dim, target_length).transpose(1, 2)
-            
-            return pooled
+        # Attention pooling with learnable queries
+        queries = self.pool_queries.unsqueeze(0).expand(batch_size, -1, -1)
         
-        # Method 2: Attention pooling with learnable queries (preferred)
-        # Prepare queries: expand learnable queries to batch
-        queries = self.pool_queries.unsqueeze(0).expand(batch_size, -1, -1)  # [batch, target_length, hidden_dim]
-        
-        # Add positional embeddings to queries
+        # Add positional embeddings
         pos_ids = torch.arange(target_length, device=queries.device)
-        pos_emb = self.pool_pos_emb(pos_ids).unsqueeze(0)  # [1, target_length, hidden_dim]
-        queries = queries + pos_emb  # Add positional information
+        pos_emb = self.pool_pos_emb(pos_ids).unsqueeze(0)
+        queries = queries + pos_emb
         
-        # Create key padding mask for attention
+        # Create key padding mask
         key_padding_mask = ~attention_mask.bool() if attention_mask is not None else None
         
-        # Apply attention pooling: queries attend to encoder states
+        # Apply attention pooling
         pooled, attention_weights = self.pool_attn(
-            queries,  # [batch, target_length, hidden_dim]
-            encoder_states,  # [batch, seq_len, hidden_dim]  
-            encoder_states,  # [batch, seq_len, hidden_dim]
-            key_padding_mask=key_padding_mask  # [batch, seq_len]
+            queries, encoder_states, encoder_states,
+            key_padding_mask=key_padding_mask
         )
         
-        # pooled: [batch, target_length, hidden_dim]
         return pooled
 
 def compute_vqa_score_single(prediction, reference_answers):
     """
     Compute VQA score for single prediction against multiple reference answers
     VQA Score = min(# humans that provided that answer / 3, 1.0)
-    
-    Args:
-        prediction: predicted answer (string)
-        reference_answers: list of reference answers (list of strings)
-    
-    Returns:
-        vqa_score: float between 0 and 1
     """
     if not reference_answers:
         return 0.0
     
-    # Normalize prediction and references
     norm_pred = normalize_vietnamese_answer(prediction)
     norm_refs = [normalize_vietnamese_answer(ref) for ref in reference_answers]
     
-    # Count how many reference answers match the prediction
     match_count = norm_refs.count(norm_pred)
-    
-    # VQA score formula: min(match_count / 3, 1.0)
     vqa_score = min(match_count / 3.0, 1.0)
     
     return vqa_score
@@ -473,13 +702,6 @@ def compute_vqa_score_single(prediction, reference_answers):
 def compute_vqa_score_batch(predictions, all_reference_answers_list):
     """
     Compute VQA scores for batch of predictions
-    
-    Args:
-        predictions: list of predicted answers
-        all_reference_answers_list: list of lists, each containing reference answers for one question
-    
-    Returns:
-        dict with VQA score metrics
     """
     vqa_scores = []
     
@@ -500,16 +722,15 @@ def compute_vqa_score_batch(predictions, all_reference_answers_list):
 def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list, tokenizer=None):
     """Enhanced evaluation metrics supporting multiple correct answers with VQA score"""
     
-    # Normalize predictions
     norm_preds = [normalize_vietnamese_answer(pred) for pred in predictions]
     
     metrics = {}
     
-    # VQA Score - the standard VQA evaluation metric
+    # VQA Score
     vqa_metrics = compute_vqa_score_batch(predictions, all_correct_answers_list)
     metrics.update(vqa_metrics)
     
-    # 1. Multi-answer exact match accuracy (if prediction matches ANY of the 5 correct answers)
+    # Multi-answer exact match accuracy
     multi_exact_matches = []
     for pred, correct_answers in zip(norm_preds, all_correct_answers_list):
         norm_correct_answers = [normalize_vietnamese_answer(ans) for ans in correct_answers]
@@ -518,7 +739,7 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     
     metrics['multi_exact_accuracy'] = sum(multi_exact_matches) / len(multi_exact_matches)
     
-    # 2. Best fuzzy accuracy (highest similarity score among all 5 correct answers)
+    # Best fuzzy accuracy
     best_fuzzy_scores = []
     for pred, correct_answers in zip(norm_preds, all_correct_answers_list):
         norm_correct_answers = [normalize_vietnamese_answer(ans) for ans in correct_answers]
@@ -533,13 +754,12 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
                 similarity = SequenceMatcher(None, pred, ref).ratio()
                 fuzzy_scores.append(similarity)
         
-        # Take the best score among all 5 answers
         best_score = max(fuzzy_scores) if fuzzy_scores else 0.0
         best_fuzzy_scores.append(best_score)
     
     metrics['multi_fuzzy_accuracy'] = sum(best_fuzzy_scores) / len(best_fuzzy_scores)
     
-    # 3. Multi-answer token-level F1 score (best F1 among all 5 correct answers)
+    # Token-level F1 score
     best_token_f1_scores = []
     best_token_precisions = []
     best_token_recalls = []
@@ -573,7 +793,6 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
                 recalls.append(recall)
                 f1_scores.append(f1)
         
-        # Take the best scores among all 5 answers
         best_token_precisions.append(max(precisions) if precisions else 0.0)
         best_token_recalls.append(max(recalls) if recalls else 0.0)
         best_token_f1_scores.append(max(f1_scores) if f1_scores else 0.0)
@@ -582,7 +801,7 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     metrics['multi_token_recall'] = sum(best_token_recalls) / len(best_token_recalls)
     metrics['multi_token_f1'] = sum(best_token_f1_scores) / len(best_token_f1_scores)
     
-    # 4. BLEU score with multiple references
+    # BLEU score với multiple references
     bleu_scores = []
     try:
         from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
@@ -594,7 +813,6 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
             ref_tokens_list = [ref.split() for ref in norm_correct_answers]
             
             try:
-                # BLEU with multiple references (all 5 correct answers)
                 bleu = sentence_bleu(ref_tokens_list, pred_tokens, smoothing_function=smoothing)
                 bleu_scores.append(bleu)
             except:
@@ -604,9 +822,8 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
         
     except ImportError:
         metrics['multi_bleu'] = 0.0
-        print("NLTK not available - Multi-reference BLEU score disabled")
     
-    # 5. ROUGE-L score with multiple references
+    # ROUGE-L score với multiple references
     rouge_scores = []
     try:
         from rouge_score import rouge_scorer
@@ -615,7 +832,6 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
         for pred, correct_answers in zip(norm_preds, all_correct_answers_list):
             norm_correct_answers = [normalize_vietnamese_answer(ans) for ans in correct_answers]
             
-            # Compute ROUGE-L against each reference and take the maximum
             rouge_scores_for_pred = []
             for ref in norm_correct_answers:
                 try:
@@ -631,18 +847,8 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
         
     except ImportError:
         metrics['multi_rouge_l'] = 0.0
-        print("Rouge-score not available - Multi-reference ROUGE score disabled")
     
-    # 6. Answer diversity analysis
-    total_unique_answers = set()
-    for correct_answers in all_correct_answers_list:
-        norm_answers = [normalize_vietnamese_answer(ans) for ans in correct_answers]
-        total_unique_answers.update(norm_answers)
-    
-    metrics['answer_vocabulary_size'] = len(total_unique_answers)
-    metrics['avg_answers_per_question'] = sum(len(answers) for answers in all_correct_answers_list) / len(all_correct_answers_list)
-    
-    # 7. Enhanced VQA score analysis
+    # Enhanced VQA score analysis
     vqa_score_distribution = {
         'perfect_ratio': metrics['vqa_perfect_count'] / len(predictions),
         'zero_ratio': metrics['vqa_zero_count'] / len(predictions),
@@ -650,11 +856,10 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     }
     metrics.update(vqa_score_distribution)
     
-    # Add standard single-answer metrics for comparison (using first answer)
+    # Add standard single-answer metrics for comparison
     first_answers = [correct_answers[0] if correct_answers else "" for correct_answers in all_correct_answers_list]
     single_metrics = compute_metrics(predictions, first_answers, tokenizer)
     
-    # Prefix single-answer metrics
     for key, value in single_metrics.items():
         metrics[f'single_{key}'] = value
     
@@ -664,45 +869,37 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     return metrics
 
 def compute_metrics(predictions, references_or_multi_answers, tokenizer=None):
-    """Enhanced compute_metrics that automatically detects multiple answers and includes VQA score"""
+    """Enhanced compute_metrics that automatically detects multiple answers"""
     
-    # Check if we have multiple answers (list of lists) or single answers (list of strings)
     if len(references_or_multi_answers) > 0 and isinstance(references_or_multi_answers[0], list):
-        # Multiple answers case
         return compute_metrics_with_multiple_answers(predictions, references_or_multi_answers, tokenizer)
     else:
-        # Single answer case - also compute VQA score by treating single answer as list
         single_answers_as_lists = [[ref] for ref in references_or_multi_answers]
         multi_metrics = compute_metrics_with_multiple_answers(predictions, single_answers_as_lists, tokenizer)
         
-        # Rename VQA score for single answer case
         if 'vqa_score' in multi_metrics:
             multi_metrics['single_answer_vqa_score'] = multi_metrics['vqa_score']
         
-        # Also compute traditional single-answer metrics
         norm_preds = [normalize_vietnamese_answer(pred) for pred in predictions]
         norm_refs = [normalize_vietnamese_answer(ref) for ref in references_or_multi_answers]
         
         traditional_metrics = {}
         
-        # 1. Exact match accuracy
         exact_matches = [pred == ref for pred, ref in zip(norm_preds, norm_refs)]
         traditional_metrics['exact_accuracy'] = sum(exact_matches) / len(exact_matches)
         
-        # 2. Fuzzy accuracy with edit distance
         fuzzy_scores = []
         for pred, ref in zip(norm_preds, norm_refs):
             if pred == ref:
                 fuzzy_scores.append(1.0)
             elif pred in ref or ref in pred:
-                fuzzy_scores.append(0.8)  # Partial credit for substring match
+                fuzzy_scores.append(0.8)
             else:
                 similarity = SequenceMatcher(None, pred, ref).ratio()
                 fuzzy_scores.append(similarity)
         
         traditional_metrics['fuzzy_accuracy'] = sum(fuzzy_scores) / len(fuzzy_scores)
         
-        # Combine metrics
         multi_metrics.update(traditional_metrics)
         
         return multi_metrics
@@ -717,7 +914,6 @@ def augment_question(question, augment_ratio=0.2):
     if len(words) < 3:
         return question
     
-    # Simple word shuffling (preserve first and last word)
     if len(words) > 4:
         middle = words[1:-1]
         random.shuffle(middle)
@@ -730,17 +926,12 @@ def normalize_vietnamese_answer(answer):
     if not isinstance(answer, str):
         answer = str(answer)
     
-    # Unicode normalization
     answer = unicodedata.normalize('NFC', answer)
-    
-    # Convert to lowercase
     answer = answer.lower().strip()
     
-    # Remove punctuation and extra whitespace
     answer = re.sub(r'[.,!?;:"\'()[\]{}]', '', answer)
     answer = re.sub(r'\s+', ' ', answer).strip()
     
-    # Remove common Vietnamese articles and particles that don't affect meaning
     vietnamese_stopwords = ['các', 'của', 'và', 'là', 'trong', 'với', 'để', 'được', 'một', 'này', 'đó']
     words = answer.split()
     filtered_words = [w for w in words if w not in vietnamese_stopwords or len(words) <= 2]
