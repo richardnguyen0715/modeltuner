@@ -9,7 +9,7 @@ def get_improved_config():
         'hidden_dim': 1024,  # PhoBERT-large dimension
         'max_length': 128,
         'batch_size': 16,
-        'num_epochs': 30,
+        'num_epochs': 10,
         'image_dir': '/home/tgng/coding/modeltuner/data/preprocessed_images',
         'device': 'cuda' if torch.cuda.is_available() else 'cpu',
         
@@ -25,8 +25,8 @@ def get_improved_config():
         'vision_mask_ratio': 0.40,  # 40% for image patches
         
         # Staged training configuration
-        'stage1_epochs': 15,  # Freeze encoders
-        'stage2_epochs':15,  # Partial unfreeze
+        'stage1_epochs': 4,  # Freeze encoders
+        'stage2_epochs':6,  # Partial unfreeze
         
         # Different learning rates
         'decoder_lr': 1e-4,
