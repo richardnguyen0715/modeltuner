@@ -9,9 +9,14 @@ from torch.utils.data import DataLoader
 import torch
 import warnings
 warnings.filterwarnings('ignore')
+
+
 print(torch.__version__)
 print(torch.version.cuda)
 print(torch.cuda.is_available())
+
+
+
 def analyze_data_balance(questions):
     """Analyze answer distribution for balance with multiple answers support"""
     from collections import Counter
