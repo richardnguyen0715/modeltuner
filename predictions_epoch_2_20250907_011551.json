@@ -1,0 +1,3567 @@
+{
+  "epoch": 1,
+  "metrics": {
+    "accuracy": 0.0,
+    "fuzzy_accuracy": 0.13724566918344971,
+    "precision": 0.16175051126507436,
+    "recall": 0.2776364644285356,
+    "f1_score": 0.19274848617310822,
+    "bleu_1": 0.13093154630069395,
+    "bleu_1_zero_count": 3132,
+    "bleu_1_nonzero_ratio": 0.5776699029126213,
+    "bleu_2": 0.058582587843321245,
+    "bleu_2_zero_count": 3132,
+    "bleu_2_nonzero_ratio": 0.5776699029126213,
+    "bleu_3": 0.035450057897885454,
+    "bleu_3_zero_count": 3132,
+    "bleu_3_nonzero_ratio": 0.5776699029126213,
+    "bleu_4": 0.024669964778001766,
+    "bleu_4_zero_count": 3132,
+    "bleu_4_nonzero_ratio": 0.5776699029126213,
+    "rouge1": 0.2982019296881367,
+    "rouge2": 0.10724761560717685,
+    "rougel": 0.26788663963799947,
+    "rouge1_zero_count": 939,
+    "rouge1_nonzero_ratio": 0.8733818770226537,
+    "rouge2_zero_count": 3871,
+    "rouge2_nonzero_ratio": 0.4780204962243797,
+    "rougel_zero_count": 939,
+    "rougel_nonzero_ratio": 0.8733818770226537,
+    "exact_match_count": 0,
+    "total_count": 7416
+  },
+  "config": {
+    "vision_model": "google/vit-base-patch16-224-in21k",
+    "text_model": "vinai/phobert-large",
+    "decoder_model": "vinai/bartpho-word",
+    "hidden_dim": 1024,
+    "max_length": 128,
+    "batch_size": 16,
+    "num_epochs": 10,
+    "image_dir": "/home/tgng/coding/modeltuner/data/preprocessed_images",
+    "device": "cuda",
+    "stage1_epochs": 2,
+    "stage2_epochs": 8,
+    "decoder_lr": 0.0001,
+    "encoder_lr": 1e-05,
+    "vision_lr": 5e-06,
+    "warmup_ratio": 0.1,
+    "scheduler_type": "linear_decay_with_warmup",
+    "weight_decay": 0.01,
+    "label_smoothing": 0.1,
+    "dropout_rate": 0.2,
+    "unfreeze_last_n_layers": 4,
+    "use_data_augmentation": true,
+    "augment_ratio": 0.2,
+    "use_wandb": true,
+    "project_name": "Vietnamese-VQA-BARTPhoBEIT",
+    "save_every_n_epochs": 1,
+    "keep_last_n_checkpoints": 5,
+    "evaluate_every_n_steps": 5000,
+    "save_predictions": true,
+    "calculate_bleu_rouge": true,
+    "calculate_cider": true
+  },
+  "results": [
+    {
+      "index": 0,
+      "prediction": "Bông x, cải anhcà và cải",
+      "ground_truth": "Thịt gà và bông cải xanh",
+      "normalized_prediction": "bông x cải anhcà cải",
+      "normalized_ground_truth": "thịt gà bông cải xanh"
+    },
+    {
+      "index": 1,
+      "prediction": "Bánh uố, cà acà và cà",
+      "ground_truth": "Đồ trang trí",
+      "normalized_prediction": "bánh uố cà acà cà",
+      "normalized_ground_truth": "đồ trang trí"
+    },
+    {
+      "index": 2,
+      "prediction": "Hai bình hơ, hai phụ và bình bình",
+      "ground_truth": "Ba bình",
+      "normalized_prediction": "hai bình hơ hai phụ bình bình",
+      "normalized_ground_truth": "ba bình"
+    },
+    {
+      "index": 3,
+      "prediction": "Hai chiếc x, chiếc chiếc nhiều khác",
+      "ground_truth": "Hai chiếc",
+      "normalized_prediction": "hai chiếc x chiếc chiếc nhiều khác",
+      "normalized_ground_truth": "hai chiếc"
+    },
+    {
+      "index": 4,
+      "prediction": "Gương giường giường ối giường được sáng trong ngủ giường",
+      "ground_truth": "Nến treo phía trên giường",
+      "normalized_prediction": "gương giường giường ối giường sáng ngủ giường",
+      "normalized_ground_truth": "nến treo phía trên giường"
+    },
+    {
+      "index": 5,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 6,
+      "prediction": "Khăn x, rử, cà acà",
+      "ground_truth": "Nhiều áp phích",
+      "normalized_prediction": "khăn x rử cà acà",
+      "normalized_ground_truth": "nhiều áp phích"
+    },
+    {
+      "index": 7,
+      "prediction": "Bánh hai là thành của thức của bữa ng.",
+      "ground_truth": "Nằm cạnh nhau",
+      "normalized_prediction": "bánh hai thành thức bữa ng",
+      "normalized_ground_truth": "nằm cạnh nhau"
+    },
+    {
+      "index": 8,
+      "prediction": "Vnước hỏhỏđang với trong nướ@@",
+      "ground_truth": "Chúng ở gần nhau",
+      "normalized_prediction": "vnước hỏhỏđang nướ@@",
+      "normalized_ground_truth": "chúng ở gần nhau"
+    },
+    {
+      "index": 9,
+      "prediction": "Các tính tay thiết điện kết với tính bàn việc bàn phê",
+      "ground_truth": "Chúng được đặt trên bàn",
+      "normalized_prediction": "tính tay thiết điện kết tính bàn việc bàn phê",
+      "normalized_ground_truth": "chúng đặt trên bàn"
+    },
+    {
+      "index": 10,
+      "prediction": "Bánh rán rán bánh được bày trên nướng nướng kem",
+      "ground_truth": "Chúng đặt gần nhau",
+      "normalized_prediction": "bánh rán rán bánh bày trên nướng nướng kem",
+      "normalized_ground_truth": "chúng đặt gần nhau"
+    },
+    {
+      "index": 11,
+      "prediction": "Bình hồ được bày trang bằng bình hơ@@",
+      "ground_truth": "Cùng là vật trang trí",
+      "normalized_prediction": "bình hồ bày trang bằng bình hơ@@",
+      "normalized_ground_truth": "cùng vật trang trí"
+    },
+    {
+      "index": 12,
+      "prediction": "Hai bình uố, nhiều khác quảquảbình hơ@@",
+      "ground_truth": "Hai bông hồng",
+      "normalized_prediction": "hai bình uố nhiều khác quảquảbình hơ@@",
+      "normalized_ground_truth": "hai bông hồng"
+    },
+    {
+      "index": 13,
+      "prediction": "Vòi cứu a xe ở tònhà gạch",
+      "ground_truth": "Vali tựa vào tường",
+      "normalized_prediction": "vòi cứu a xe ở tònhà gạch",
+      "normalized_ground_truth": "vali tựa vào tường"
+    },
+    {
+      "index": 14,
+      "prediction": "Hai máy xách xách và chiếc thoại thiết ngoại",
+      "ground_truth": "Vài cái điện thoại",
+      "normalized_prediction": "hai máy xách xách chiếc thoại thiết ngoại",
+      "normalized_ground_truth": "vài cái điện thoại"
+    },
+    {
+      "index": 15,
+      "prediction": "Lò ưở, bar bar một trong tắm nhà sinh",
+      "ground_truth": "Khái niệm mở",
+      "normalized_prediction": "lò ưở bar bar tắm nhà sinh",
+      "normalized_ground_truth": "khái niệm mở"
+    },
+    {
+      "index": 16,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 17,
+      "prediction": "Vì có là trình để bị chuyến tiếp m.",
+      "ground_truth": "Để trưng bày",
+      "normalized_prediction": "vì có trình bị chuyến tiếp m",
+      "normalized_ground_truth": "trưng bày"
+    },
+    {
+      "index": 18,
+      "prediction": "Hai món ăn nhiều khác một bữa đủ món ng.",
+      "ground_truth": "Ba món ăn",
+      "normalized_prediction": "hai món ăn nhiều khác bữa đủ món ng",
+      "normalized_ground_truth": "ba món ăn"
+    },
+    {
+      "index": 19,
+      "prediction": "Khăn chi, vệ , cà và cái",
+      "ground_truth": "Khăn trải giường",
+      "normalized_prediction": "khăn chi vệ cà cái",
+      "normalized_ground_truth": "khăn trải giường"
+    },
+    {
+      "index": 20,
+      "prediction": "Máy cà acà và tính tay bàn học",
+      "ground_truth": "Điều khiển wii",
+      "normalized_prediction": "máy cà acà tính tay bàn học",
+      "normalized_ground_truth": "điều khiển wii"
+    },
+    {
+      "index": 21,
+      "prediction": "Hai loại máy xách",
+      "ground_truth": "Hai loại",
+      "normalized_prediction": "hai loại máy xách",
+      "normalized_ground_truth": "hai loại"
+    },
+    {
+      "index": 22,
+      "prediction": "Bánh x, cà acà và cà",
+      "ground_truth": "Trên một đĩa trắng",
+      "normalized_prediction": "bánh x cà acà cà",
+      "normalized_ground_truth": "trên đĩa trắng"
+    },
+    {
+      "index": 23,
+      "prediction": "Xo, uố, chu, cà",
+      "ground_truth": "Một miếng thức ăn",
+      "normalized_prediction": "xo uố chu cà",
+      "normalized_ground_truth": "miếng thức ăn"
+    },
+    {
+      "index": 24,
+      "prediction": "Con ci, cà abàn phê chuột",
+      "ground_truth": "Bàn phím máy tính",
+      "normalized_prediction": "con ci cà abàn phê chuột",
+      "normalized_ground_truth": "bàn phím máy tính"
+    },
+    {
+      "index": 25,
+      "prediction": "Bồn , vệ , , rửa và vệ",
+      "ground_truth": "Rất sạch sẽ",
+      "normalized_prediction": "bồn vệ rửa vệ",
+      "normalized_ground_truth": "rất sạch sẽ"
+    },
+    {
+      "index": 26,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu nâu đỏ",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu nâu đỏ"
+    },
+    {
+      "index": 27,
+      "prediction": "Phòng tắm nhà sinh ở phòng và tắm trong tắm",
+      "ground_truth": "Nhà vệ sinh nằm trong phòng tắm",
+      "normalized_prediction": "phòng tắm nhà sinh ở phòng tắm tắm",
+      "normalized_ground_truth": "nhà vệ sinh nằm phòng tắm"
+    },
+    {
+      "index": 28,
+      "prediction": "Bánh rán rán bánh được bày trong nướng nướng bánh",
+      "ground_truth": "Đều là các loại bánh",
+      "normalized_prediction": "bánh rán rán bánh bày nướng nướng bánh",
+      "normalized_ground_truth": "đều loại bánh"
+    },
+    {
+      "index": 29,
+      "prediction": "Màu trắ, nâ, ngđen trắ@@",
+      "ground_truth": "Màu đen",
+      "normalized_prediction": "màu trắ nâ ngđen trắ@@",
+      "normalized_ground_truth": "màu đen"
+    },
+    {
+      "index": 30,
+      "prediction": "Đ, xanh cây trắ, và lá",
+      "ground_truth": "Màu đen",
+      "normalized_prediction": "đ xanh cây trắ lá",
+      "normalized_ground_truth": "màu đen"
+    },
+    {
+      "index": 31,
+      "prediction": "Hai chiếc x, chiếc màu và chiếc trắng",
+      "ground_truth": "Một màn hình",
+      "normalized_prediction": "hai chiếc x chiếc màu chiếc trắng",
+      "normalized_ground_truth": "màn hình"
+    },
+    {
+      "index": 32,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 33,
+      "prediction": "Bánh được bày kệ để đồ cho bá@@",
+      "ground_truth": "Chúng ở chung một kệ",
+      "normalized_prediction": "bánh bày kệ đồ cho bá@@",
+      "normalized_ground_truth": "chúng ở chung kệ"
+    },
+    {
+      "index": 34,
+      "prediction": "Màu trắ, ngđen trắng xanh cây trắng trắng",
+      "ground_truth": "Chủ yếu màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh cây trắng trắng",
+      "normalized_ground_truth": "chủ yếu màu trắng"
+    },
+    {
+      "index": 35,
+      "prediction": "Lò nướng tủ và lạnh đều thiết trong lạnh lạnh",
+      "ground_truth": "Cả hai đều có cửa mở",
+      "normalized_prediction": "lò nướng tủ lạnh đều thiết lạnh lạnh",
+      "normalized_ground_truth": "cả hai đều có cửa mở"
+    },
+    {
+      "index": 36,
+      "prediction": "Trên đĩa ă, đĩa ăn trên ăn bàn",
+      "ground_truth": "Bên cạnh bơ",
+      "normalized_prediction": "trên đĩa ă đĩa ăn trên ăn bàn",
+      "normalized_ground_truth": "bên cạnh bơ"
+    },
+    {
+      "index": 37,
+      "prediction": "Hai máy xách xách và tính tay học học",
+      "ground_truth": "Một vài",
+      "normalized_prediction": "hai máy xách xách tính tay học học",
+      "normalized_ground_truth": "một vài"
+    },
+    {
+      "index": 38,
+      "prediction": "Bánh rán rán bánh được bày trên trang .",
+      "ground_truth": "Đặt cạnh nhau",
+      "normalized_prediction": "bánh rán rán bánh bày trên trang",
+      "normalized_ground_truth": "đặt cạnh nhau"
+    },
+    {
+      "index": 39,
+      "prediction": "Chúng là thành của bữa đầy đủ đủ ăn đủ",
+      "ground_truth": "Chúng là một bữa ăn hoàn chỉnh",
+      "normalized_prediction": "chúng thành bữa đầy đủ đủ ăn đủ",
+      "normalized_ground_truth": "chúng bữa ăn hoàn chỉnh"
+    },
+    {
+      "index": 40,
+      "prediction": "Bên tònhà phía cái đó cái đó@@",
+      "ground_truth": "Phía trên cân",
+      "normalized_prediction": "bên tònhà phía cái cái đó@@",
+      "normalized_ground_truth": "phía trên cân"
+    },
+    {
+      "index": 41,
+      "prediction": "Đĩa ĩa ăn cà đang trên ăn đĩa ăn",
+      "ground_truth": "Chúng được đặt cạnh đĩa",
+      "normalized_prediction": "đĩa ĩa ăn cà đang trên ăn đĩa ăn",
+      "normalized_ground_truth": "chúng đặt cạnh đĩa"
+    },
+    {
+      "index": 42,
+      "prediction": "Lò ưở, vi , nướng và rửa trong tắm",
+      "ground_truth": "Tủ lạnh không phù hợp",
+      "normalized_prediction": "lò ưở vi nướng rửa tắm",
+      "normalized_ground_truth": "tủ lạnh không phù hợp"
+    },
+    {
+      "index": 43,
+      "prediction": "Hai loạ, loại khác nhiều khác ba .",
+      "ground_truth": "Nhiều loại khác nhau",
+      "normalized_prediction": "hai loạ loại khác nhiều khác ba",
+      "normalized_ground_truth": "nhiều loại khác nhau"
+    },
+    {
+      "index": 44,
+      "prediction": "Bồn tắm bồn ở bồn và rửa trong tắm tắm tắ@@",
+      "ground_truth": "Bồn tắm nằm cạnh bồn rửa",
+      "normalized_prediction": "bồn tắm bồn ở bồn rửa tắm tắm tắ@@",
+      "normalized_ground_truth": "bồn tắm nằm cạnh bồn rửa"
+    },
+    {
+      "index": 45,
+      "prediction": "Bên tònhà sinh cạnh sổnhà sinh@@",
+      "ground_truth": "Phía trên bồn rửa",
+      "normalized_prediction": "bên tònhà sinh cạnh sổnhà sinh@@",
+      "normalized_ground_truth": "phía trên bồn rửa"
+    },
+    {
+      "index": 46,
+      "prediction": "Trên giường giường cửa , giường trên cửa sổ ngủ giường ghế giường bàn việc giường phòng",
+      "ground_truth": "Trên chiếc giường lớn",
+      "normalized_prediction": "trên giường giường cửa giường trên cửa sổ ngủ giường ghế giường bàn việc giường phòng",
+      "normalized_ground_truth": "trên chiếc giường lớn"
+    },
+    {
+      "index": 47,
+      "prediction": "Hai chiếc máy xách",
+      "ground_truth": "Năm chiếc",
+      "normalized_prediction": "hai chiếc máy xách",
+      "normalized_ground_truth": "năm chiếc"
+    },
+    {
+      "index": 48,
+      "prediction": "Hai chu, rốt cà acà và quả",
+      "ground_truth": "Khoảng hơn mười củ.",
+      "normalized_prediction": "hai chu rốt cà acà quả",
+      "normalized_ground_truth": "khoảng hơn mười củ"
+    },
+    {
+      "index": 49,
+      "prediction": "Tháp hồ một đồng , chiếc hồ trên dài",
+      "ground_truth": "Ở vị trí ngẫu nhiên",
+      "normalized_prediction": "tháp hồ đồng chiếc hồ trên dài",
+      "normalized_ground_truth": "ở vị trí ngẫu nhiên"
+    },
+    {
+      "index": 50,
+      "prediction": "Lò ưở, nướng nướng và nướng trong lạnh tủ",
+      "ground_truth": "Tủ lạnh nằm trong tủ gỗ",
+      "normalized_prediction": "lò ưở nướng nướng nướng lạnh tủ",
+      "normalized_ground_truth": "tủ lạnh nằm tủ gỗ"
+    },
+    {
+      "index": 51,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 52,
+      "prediction": "Lò ưở, vệ , rửa và vệ",
+      "ground_truth": "Gỗ",
+      "normalized_prediction": "lò ưở vệ rửa vệ",
+      "normalized_ground_truth": "gỗ"
+    },
+    {
+      "index": 53,
+      "prediction": "Gương rửa rửa ở trước rửa trong tắ@@",
+      "ground_truth": "Máy pha cà phê ngồi trên quầy",
+      "normalized_prediction": "gương rửa rửa ở trước rửa tắ@@",
+      "normalized_ground_truth": "máy pha cà phê ngồi trên quầy"
+    },
+    {
+      "index": 54,
+      "prediction": "TV tính tay trên làm nằm bàn việc màn nh.",
+      "ground_truth": "Loa ở gần màn hình",
+      "normalized_prediction": "tv tính tay trên làm nằm bàn việc màn nh",
+      "normalized_ground_truth": "loa ở gần màn hình"
+    },
+    {
+      "index": 55,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 56,
+      "prediction": "Bồn rử, vệ , rửa nhà sinhbồn",
+      "ground_truth": "Bàn trang điểm và nhà vệ sinh",
+      "normalized_prediction": "bồn rử vệ rửa nhà sinhbồn",
+      "normalized_ground_truth": "bàn trang điểm nhà vệ sinh"
+    },
+    {
+      "index": 57,
+      "prediction": "Bồn ưở, vệ , rử, rửa bồn",
+      "ground_truth": "Bồn rửa và bồn tắm",
+      "normalized_prediction": "bồn ưở vệ rử rửa bồn",
+      "normalized_ground_truth": "bồn rửa bồn tắm"
+    },
+    {
+      "index": 58,
+      "prediction": "Bánh x, cải là thành của bữa cân",
+      "ground_truth": "Chúng là một bữa ăn",
+      "normalized_prediction": "bánh x cải thành bữa cân",
+      "normalized_ground_truth": "chúng bữa ăn"
+    },
+    {
+      "index": 59,
+      "prediction": "Hai chiếc thoại thoại chiếc máy xách chiếc chiếc",
+      "ground_truth": "Hai chiếc",
+      "normalized_prediction": "hai chiếc thoại thoại chiếc máy xách chiếc chiếc",
+      "normalized_ground_truth": "hai chiếc"
+    },
+    {
+      "index": 60,
+      "prediction": "Hai con lớ, con và con khác",
+      "ground_truth": "Bốn con mèo thật và một con mèo giả",
+      "normalized_prediction": "hai con lớ con con khác",
+      "normalized_ground_truth": "bốn con mèo thật con mèo giả"
+    },
+    {
+      "index": 61,
+      "prediction": "Bông x, cải anhcà và cải",
+      "ground_truth": "Một chiếc đĩa giấy",
+      "normalized_prediction": "bông x cải anhcà cải",
+      "normalized_ground_truth": "chiếc đĩa giấy"
+    },
+    {
+      "index": 62,
+      "prediction": "Bồn rửa nhà sinh có là bị dụng phòng m.",
+      "ground_truth": "Chúng là các thiết bị vệ sinh.",
+      "normalized_prediction": "bồn rửa nhà sinh có bị dụng phòng m",
+      "normalized_ground_truth": "chúng thiết bị vệ sinh"
+    },
+    {
+      "index": 63,
+      "prediction": "Vrử, vệ , cà và vệ",
+      "ground_truth": "Bằng gỗ",
+      "normalized_prediction": "vrử vệ cà vệ",
+      "normalized_ground_truth": "bằng gỗ"
+    },
+    {
+      "index": 64,
+      "prediction": "Chúng con thành một của con và con khác",
+      "ground_truth": "Chúng nằm cạnh nhau",
+      "normalized_prediction": "chúng con thành con con khác",
+      "normalized_ground_truth": "chúng nằm cạnh nhau"
+    },
+    {
+      "index": 65,
+      "prediction": "Bên một bàn việc công và bàn việ@@",
+      "ground_truth": "Trên bàn",
+      "normalized_prediction": "bên bàn việc công bàn việ@@",
+      "normalized_ground_truth": "trên bàn"
+    },
+    {
+      "index": 66,
+      "prediction": "Bàn phê đang trên tay cầm thoại điện c.",
+      "ground_truth": "Điện thoại ở gần cốc",
+      "normalized_prediction": "bàn phê đang trên tay cầm thoại điện c",
+      "normalized_ground_truth": "điện thoại ở gần cốc"
+    },
+    {
+      "index": 67,
+      "prediction": "Bên bàn việc bên nhà sinh bên bồn",
+      "ground_truth": "Trên kệ và quầy",
+      "normalized_prediction": "bên bàn việc bên nhà sinh bên bồn",
+      "normalized_ground_truth": "trên kệ quầy"
+    },
+    {
+      "index": 68,
+      "prediction": "Hai quả và quả nhiều khác sá.",
+      "ground_truth": "Ít nhất ba quả trứng.",
+      "normalized_prediction": "hai quả quả nhiều khác sá",
+      "normalized_ground_truth": "ít nhất ba quả trứng"
+    },
+    {
+      "index": 69,
+      "prediction": "Vì tăng hương cho thêm vịvì đã ăn",
+      "ground_truth": "Vì nó ngọt và có nhiều lớp",
+      "normalized_prediction": "vì tăng hương cho thêm vịvì đã ăn",
+      "normalized_ground_truth": "vì nó ngọt có nhiều lớp"
+    },
+    {
+      "index": 70,
+      "prediction": "Hai bá, uố, bình abình hơ@@",
+      "ground_truth": "Không rõ số lượng cụ thể.",
+      "normalized_prediction": "hai bá uố bình abình hơ@@",
+      "normalized_ground_truth": "không rõ số lượng cụ thể"
+    },
+    {
+      "index": 71,
+      "prediction": "Bên một bàn việc ngoài công của máy xách",
+      "ground_truth": "Trên bàn làm việc màu đen",
+      "normalized_prediction": "bên bàn việc ngoài công máy xách",
+      "normalized_ground_truth": "trên bàn làm việc màu đen"
+    },
+    {
+      "index": 72,
+      "prediction": "Cà ng, rốt cà acà và lá",
+      "ground_truth": "Cam nhạt và sẫm",
+      "normalized_prediction": "cà ng rốt cà acà lá",
+      "normalized_ground_truth": "cam nhạt sẫm"
+    },
+    {
+      "index": 73,
+      "prediction": "Hai loại câ, uố, nhiều khác",
+      "ground_truth": "Bốn loại trái cây",
+      "normalized_prediction": "hai loại câ uố nhiều khác",
+      "normalized_ground_truth": "bốn loại trái cây"
+    },
+    {
+      "index": 74,
+      "prediction": "Lò nướng nướng một trong và không trong tắ@@",
+      "ground_truth": "Sàn gỗ với tủ gỗ",
+      "normalized_prediction": "lò nướng nướng không tắ@@",
+      "normalized_ground_truth": "sàn gỗ tủ gỗ"
+    },
+    {
+      "index": 75,
+      "prediction": "Cócó là ngày trời m. ưa@@",
+      "ground_truth": "Có, nó bị thiếu một chiếc gạc.",
+      "normalized_prediction": "cócó ngày trời m ưa@@",
+      "normalized_ground_truth": "có nó bị thiếu chiếc gạc"
+    },
+    {
+      "index": 76,
+      "prediction": "Hai con bông lớ, con ba gấu bông",
+      "ground_truth": "Hai con",
+      "normalized_prediction": "hai con bông lớ con ba gấu bông",
+      "normalized_ground_truth": "hai con"
+    },
+    {
+      "index": 77,
+      "prediction": "Vưở, uố, cà abàn phê học",
+      "ground_truth": "Da và gỗ",
+      "normalized_prediction": "vưở uố cà abàn phê học",
+      "normalized_ground_truth": "da gỗ"
+    },
+    {
+      "index": 78,
+      "prediction": "Bồn tắm nhà sinh ở phòng và vệ trong tắm",
+      "ground_truth": "Được lát gạch phù hợp",
+      "normalized_prediction": "bồn tắm nhà sinh ở phòng vệ tắm",
+      "normalized_ground_truth": "lát gạch phù hợp"
+    },
+    {
+      "index": 79,
+      "prediction": "Hoa hoa trang được bày bình trong bình bình",
+      "ground_truth": "Chúng là một bộ phận của bình hoa",
+      "normalized_prediction": "hoa hoa trang bày bình bình bình",
+      "normalized_ground_truth": "chúng bộ phận bình hoa"
+    },
+    {
+      "index": 80,
+      "prediction": "Túi chứa lý lý các dụng để đồ trong lạnh",
+      "ground_truth": "Túi rỗng để chứa đồ ba lô",
+      "normalized_prediction": "túi chứa lý lý dụng đồ lạnh",
+      "normalized_ground_truth": "túi rỗng chứa đồ ba lô"
+    },
+    {
+      "index": 81,
+      "prediction": "Để tăng hương cho bữa cân cân Để thêm vị@@",
+      "ground_truth": "Để chuẩn bị cho một bữa ăn.",
+      "normalized_prediction": "tăng hương cho bữa cân cân thêm vị@@",
+      "normalized_ground_truth": "chuẩn bị cho bữa ăn"
+    },
+    {
+      "index": 82,
+      "prediction": "Trên một đĩa ăn n, một bàn phê trắng",
+      "ground_truth": "Trên đĩa",
+      "normalized_prediction": "trên đĩa ăn n bàn phê trắng",
+      "normalized_ground_truth": "trên đĩa"
+    },
+    {
+      "index": 83,
+      "prediction": "Khô, cửa , , sổ , ng, nhà sinh,",
+      "ground_truth": "Ban công",
+      "normalized_prediction": "khô cửa sổ ng nhà sinh",
+      "normalized_ground_truth": "ban công"
+    },
+    {
+      "index": 84,
+      "prediction": "Trong sổ tắm cạnh sổ và trong tắm phòng m.",
+      "ground_truth": "Trên tủ quần áo",
+      "normalized_prediction": "sổ tắm cạnh sổ tắm phòng m",
+      "normalized_ground_truth": "trên tủ quần áo"
+    },
+    {
+      "index": 85,
+      "prediction": "Hai chiếc bá, chiếc màu và chiếc rán",
+      "ground_truth": "Ba chiếc bánh",
+      "normalized_prediction": "hai chiếc bá chiếc màu chiếc rán",
+      "normalized_ground_truth": "ba chiếc bánh"
+    },
+    {
+      "index": 86,
+      "prediction": "Hai rử, rửa , , bồn và rửa rửa",
+      "ground_truth": "Ba chiếc khăn tắm",
+      "normalized_prediction": "hai rử rửa bồn rửa rửa",
+      "normalized_ground_truth": "ba chiếc khăn tắm"
+    },
+    {
+      "index": 87,
+      "prediction": "Bên tònhà sinh và ngoài của a gạch",
+      "ground_truth": "Trên tường",
+      "normalized_prediction": "bên tònhà sinh ngoài a gạch",
+      "normalized_ground_truth": "trên tường"
+    },
+    {
+      "index": 88,
+      "prediction": "Lò ưở, vệ , rử, rửa và vệ",
+      "ground_truth": "Giường đơn, ghế dài",
+      "normalized_prediction": "lò ưở vệ rử rửa vệ",
+      "normalized_ground_truth": "giường đơn ghế dài"
+    },
+    {
+      "index": 89,
+      "prediction": "Bông x, cải là thành của bữa đầy",
+      "ground_truth": "Chúng được cắt và trộn lẫn",
+      "normalized_prediction": "bông x cải thành bữa đầy",
+      "normalized_ground_truth": "chúng cắt trộn lẫn"
+    },
+    {
+      "index": 90,
+      "prediction": "Bồn tắm nhà sinh ở phòng trong vệ tắm tắm bồn",
+      "ground_truth": "Chúng ở gần nhau",
+      "normalized_prediction": "bồn tắm nhà sinh ở phòng vệ tắm tắm bồn",
+      "normalized_ground_truth": "chúng ở gần nhau"
+    },
+    {
+      "index": 91,
+      "prediction": "Điện điện điện di và thoại thoại điện nước",
+      "ground_truth": "Kiểu lật",
+      "normalized_prediction": "điện điện điện di thoại thoại điện nước",
+      "normalized_ground_truth": "kiểu lật"
+    },
+    {
+      "index": 92,
+      "prediction": "Khô, là nội của nhà sinh lớ@@",
+      "ground_truth": "Có một hòn đảo trung tâm",
+      "normalized_prediction": "khô nội nhà sinh lớ@@",
+      "normalized_ground_truth": "có hòn đảo trung tâm"
+    },
+    {
+      "index": 93,
+      "prediction": "Lò ưở, làm , tính bàn việc bàn phê",
+      "ground_truth": "Máy tính",
+      "normalized_prediction": "lò ưở làm tính bàn việc bàn phê",
+      "normalized_ground_truth": "máy tính"
+    },
+    {
+      "index": 94,
+      "prediction": "Cây cây hoa hoa đang hoa trong uố@@",
+      "ground_truth": "Cây chết và héo trong bình",
+      "normalized_prediction": "cây cây hoa hoa đang hoa uố@@",
+      "normalized_ground_truth": "cây chết héo bình"
+    },
+    {
+      "index": 95,
+      "prediction": "Hai nhiều khác , loại khác khác ba .",
+      "ground_truth": "Nhiều loại rau",
+      "normalized_prediction": "hai nhiều khác loại khác khác ba",
+      "normalized_ground_truth": "nhiều loại rau"
+    },
+    {
+      "index": 96,
+      "prediction": "Giường x, giường giường và trải đầy đạc",
+      "ground_truth": "Được làm với ít nhất ba gối",
+      "normalized_prediction": "giường x giường giường trải đầy đạc",
+      "normalized_ground_truth": "làm ít nhất ba gối"
+    },
+    {
+      "index": 97,
+      "prediction": "Hai lớ, nhiều đồ và đồ ba .",
+      "ground_truth": "Hai món",
+      "normalized_prediction": "hai lớ nhiều đồ đồ ba",
+      "normalized_ground_truth": "hai món"
+    },
+    {
+      "index": 98,
+      "prediction": "Bồn rửa ở bồn và rửa trong tắ@@",
+      "ground_truth": "Chúng ở gần nhau",
+      "normalized_prediction": "bồn rửa ở bồn rửa tắ@@",
+      "normalized_ground_truth": "chúng ở gần nhau"
+    },
+    {
+      "index": 99,
+      "prediction": "Gương rửa rửa tắm bồn và vệ đều trong tắm tắm",
+      "ground_truth": "Cùng tồn tại trong phòng tắm",
+      "normalized_prediction": "gương rửa rửa tắm bồn vệ đều tắm tắm",
+      "normalized_ground_truth": "cùng tồn tại phòng tắm"
+    },
+    {
+      "index": 100,
+      "prediction": "Họ người nữ một vợ và người em",
+      "ground_truth": "Họ đang đứng cùng nhau",
+      "normalized_prediction": "họ người nữ vợ người em",
+      "normalized_ground_truth": "họ đang đứng cùng nhau"
+    },
+    {
+      "index": 101,
+      "prediction": "Hai tính máy xách và tính thiết ngoại",
+      "ground_truth": "Hai màn hình",
+      "normalized_prediction": "hai tính máy xách tính thiết ngoại",
+      "normalized_ground_truth": "hai màn hình"
+    },
+    {
+      "index": 102,
+      "prediction": "Bánh mì chiên chiên được trong nước phủ bánh",
+      "ground_truth": "Bánh mì kẹp được ngâm trong sốt",
+      "normalized_prediction": "bánh mì chiên chiên nước phủ bánh",
+      "normalized_ground_truth": "bánh mì kẹp ngâm sốt"
+    },
+    {
+      "index": 103,
+      "prediction": "Khô, là nội của trang của đạ@@",
+      "ground_truth": "Hình chữ nhật",
+      "normalized_prediction": "khô nội trang đạ@@",
+      "normalized_ground_truth": "hình chữ nhật"
+    },
+    {
+      "index": 104,
+      "prediction": "Cócó là bữa đầy đầy đủ đủ sá@@",
+      "ground_truth": "Đồ ăn ngon đã sẵn sàng",
+      "normalized_prediction": "cócó bữa đầy đầy đủ đủ sá@@",
+      "normalized_ground_truth": "đồ ăn ngon đã sẵn sàng"
+    },
+    {
+      "index": 105,
+      "prediction": "Biển òi cứu a nằm trên báo trang .",
+      "ground_truth": "Gần nhau",
+      "normalized_prediction": "biển òi cứu a nằm trên báo trang",
+      "normalized_ground_truth": "gần nhau"
+    },
+    {
+      "index": 106,
+      "prediction": "Lò ưở, so, trang và đồ thất",
+      "ground_truth": "Chủ đề hoa",
+      "normalized_prediction": "lò ưở so trang đồ thất",
+      "normalized_ground_truth": "chủ đề hoa"
+    },
+    {
+      "index": 107,
+      "prediction": "Máy xách nằm bàn đang trên tính tay .",
+      "ground_truth": "Những tờ giấy ở sau laptop.",
+      "normalized_prediction": "máy xách nằm bàn đang trên tính tay",
+      "normalized_ground_truth": "những tờ giấy ở sau laptop"
+    },
+    {
+      "index": 108,
+      "prediction": "Bánh rán rán bánh nhật đang trên nướng bánh",
+      "ground_truth": "Chiếc bánh được đặt trên doily",
+      "normalized_prediction": "bánh rán rán bánh nhật đang trên nướng bánh",
+      "normalized_ground_truth": "chiếc bánh đặt trên doily"
+    },
+    {
+      "index": 109,
+      "prediction": "Bánh x, cà akhoai và tây",
+      "ground_truth": "Bánh sandwich, dưa chua và salad",
+      "normalized_prediction": "bánh x cà akhoai tây",
+      "normalized_ground_truth": "bánh sandwich dưa chua salad"
+    },
+    {
+      "index": 110,
+      "prediction": "Khô, vệ , rửa nhà sinhbồn",
+      "ground_truth": "Có, chúng bị rỉ sét",
+      "normalized_prediction": "khô vệ rửa nhà sinhbồn",
+      "normalized_ground_truth": "có chúng bị rỉ sét"
+    },
+    {
+      "index": 111,
+      "prediction": "Vx, vệ và cây kim .",
+      "ground_truth": "Dụng cụ cho ngựa",
+      "normalized_prediction": "vx vệ cây kim",
+      "normalized_ground_truth": "dụng cụ cho ngựa"
+    },
+    {
+      "index": 112,
+      "prediction": "Xx, cà acà và tây",
+      "ground_truth": "Trứng, thịt xông khói, bánh mì",
+      "normalized_prediction": "xx cà acà tây",
+      "normalized_ground_truth": "trứng thịt xông khói bánh mì"
+    },
+    {
+      "index": 113,
+      "prediction": "Hai tính tính tay máy xách và thiết ngoại",
+      "ground_truth": "Vài cái",
+      "normalized_prediction": "hai tính tính tay máy xách thiết ngoại",
+      "normalized_ground_truth": "vài cái"
+    },
+    {
+      "index": 114,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu xanh và trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu xanh trắng"
+    },
+    {
+      "index": 115,
+      "prediction": "Bình hồ nước bao hoa bình bình hơ@@",
+      "ground_truth": "Hoa được cắm trong bình",
+      "normalized_prediction": "bình hồ nước bao hoa bình bình hơ@@",
+      "normalized_ground_truth": "hoa cắm bình"
+    },
+    {
+      "index": 116,
+      "prediction": "Bên một bàn việc công và bàn việ@@",
+      "ground_truth": "Trên bàn",
+      "normalized_prediction": "bên bàn việc công bàn việ@@",
+      "normalized_ground_truth": "trên bàn"
+    },
+    {
+      "index": 117,
+      "prediction": "Vvệ , vệ và rửa nhà sinhgạch",
+      "ground_truth": "Sàn gỗ",
+      "normalized_prediction": "vvệ vệ rửa nhà sinhgạch",
+      "normalized_ground_truth": "sàn gỗ"
+    },
+    {
+      "index": 118,
+      "prediction": "Hai tính tính thiết thiết điện máy xách",
+      "ground_truth": "Ba thiết bị",
+      "normalized_prediction": "hai tính tính thiết thiết điện máy xách",
+      "normalized_ground_truth": "ba thiết bị"
+    },
+    {
+      "index": 119,
+      "prediction": "Trên một đĩa màu và đĩa ăn bàn phê",
+      "ground_truth": "Trên thớt",
+      "normalized_prediction": "trên đĩa màu đĩa ăn bàn phê",
+      "normalized_ground_truth": "trên thớt"
+    },
+    {
+      "index": 120,
+      "prediction": "Bánh x, uố, cà acà",
+      "ground_truth": "Có xúc xích và khoai tây.",
+      "normalized_prediction": "bánh x uố cà acà",
+      "normalized_ground_truth": "có xúc xích khoai tây"
+    },
+    {
+      "index": 121,
+      "prediction": "Bên lò ưở, rửa nhà sinhbàn phê trắng",
+      "ground_truth": "Trên một quầy bếp",
+      "normalized_prediction": "bên lò ưở rửa nhà sinhbàn phê trắng",
+      "normalized_ground_truth": "trên quầy bếp"
+    },
+    {
+      "index": 122,
+      "prediction": "Bàn cà nằm bàn việc tính tay trên phím bàn việ@@",
+      "ground_truth": "Đặt cạnh nhau",
+      "normalized_prediction": "bàn cà nằm bàn việc tính tay trên phím bàn việ@@",
+      "normalized_ground_truth": "đặt cạnh nhau"
+    },
+    {
+      "index": 123,
+      "prediction": "Quả táo quả đang trên làm của uố@@",
+      "ground_truth": "Bát chứa táo",
+      "normalized_prediction": "quả táo quả đang trên làm uố@@",
+      "normalized_ground_truth": "bát chứa táo"
+    },
+    {
+      "index": 124,
+      "prediction": "Màu trắ, nâ, ngđen trắng trắng nâu",
+      "ground_truth": "Màu đen và nâu",
+      "normalized_prediction": "màu trắ nâ ngđen trắng trắng nâu",
+      "normalized_ground_truth": "màu đen nâu"
+    },
+    {
+      "index": 125,
+      "prediction": "Đĩa tính tay đang trên tính bàn việ@@",
+      "ground_truth": "Chúng có thể đặt gần nhau",
+      "normalized_prediction": "đĩa tính tay đang trên tính bàn việ@@",
+      "normalized_ground_truth": "chúng có thể đặt gần nhau"
+    },
+    {
+      "index": 126,
+      "prediction": "Hai phụ và em em đứa đứa em",
+      "ground_truth": "Một",
+      "normalized_prediction": "hai phụ em em đứa đứa em",
+      "normalized_ground_truth": "một"
+    },
+    {
+      "index": 127,
+      "prediction": "Bồn ưở, vệ , rử, rửa bồn",
+      "ground_truth": "Bồn rửa và bồn tắm",
+      "normalized_prediction": "bồn ưở vệ rử rửa bồn",
+      "normalized_ground_truth": "bồn rửa bồn tắm"
+    },
+    {
+      "index": 128,
+      "prediction": "Lò ưở, rử, và trang trang trắng trắng",
+      "ground_truth": "Trang phục ông già Noel",
+      "normalized_prediction": "lò ưở rử trang trang trắng trắng",
+      "normalized_ground_truth": "trang phục ông già noel"
+    },
+    {
+      "index": 129,
+      "prediction": "TV dài ghế ghế đối ghế fabàn phê ghế giường ghế ghếghế bàn việc ghế sofa ghế TV ghế , ghế tivi ghế ưở, so, dài",
+      "ground_truth": "Ghế đẩu gần ghế sofa",
+      "normalized_prediction": "tv dài ghế ghế đối ghế fabàn phê ghế giường ghế ghếghế bàn việc ghế sofa ghế tv ghế ghế tivi ghế ưở so dài",
+      "normalized_ground_truth": "ghế đẩu gần ghế sofa"
+    },
+    {
+      "index": 130,
+      "prediction": "Vcà và vệ đều đồ trong tắ@@",
+      "ground_truth": "Miếng đệm đầu gối",
+      "normalized_prediction": "vcà vệ đều đồ tắ@@",
+      "normalized_ground_truth": "miếng đệm đầu gối"
+    },
+    {
+      "index": 131,
+      "prediction": "Hai máy xách xách và thiết ngoại máy học",
+      "ground_truth": "Một vài",
+      "normalized_prediction": "hai máy xách xách thiết ngoại máy học",
+      "normalized_ground_truth": "một vài"
+    },
+    {
+      "index": 132,
+      "prediction": "Một cái khổl, cái màu và cái",
+      "ground_truth": "Một con vật nhồi bông",
+      "normalized_prediction": "cái khổl cái màu cái",
+      "normalized_ground_truth": "con vật nhồi bông"
+    },
+    {
+      "index": 133,
+      "prediction": "Trong rửa và vệ đều trong tắm trong tắ@@",
+      "ground_truth": "Phản chiếu trong gương",
+      "normalized_prediction": "rửa vệ đều tắm tắ@@",
+      "normalized_ground_truth": "phản chiếu gương"
+    },
+    {
+      "index": 134,
+      "prediction": "Cà acà ach, uố, rốt cà",
+      "ground_truth": "Hoa hồng",
+      "normalized_prediction": "cà acà ach uố rốt cà",
+      "normalized_ground_truth": "hoa hồng"
+    },
+    {
+      "index": 135,
+      "prediction": "Hai chiếc hồ hơ, chiếc máy xách",
+      "ground_truth": "Một chiếc đồng hồ",
+      "normalized_prediction": "hai chiếc hồ hơ chiếc máy xách",
+      "normalized_ground_truth": "chiếc đồng hồ"
+    },
+    {
+      "index": 136,
+      "prediction": "Ghế fabàn phê nnibàn việc học",
+      "ground_truth": "Một chiếc máy đánh chữ",
+      "normalized_prediction": "ghế fabàn phê nnibàn việc học",
+      "normalized_ground_truth": "chiếc máy đánh chữ"
+    },
+    {
+      "index": 137,
+      "prediction": "Bên bàn phê ăn cạnh thức của thức n.",
+      "ground_truth": "Gần bát rau",
+      "normalized_prediction": "bên bàn phê ăn cạnh thức thức n",
+      "normalized_ground_truth": "gần bát rau"
+    },
+    {
+      "index": 138,
+      "prediction": "Màu trắ, ngđen trắng trắng xanh cây trắng",
+      "ground_truth": "Tông màu đất",
+      "normalized_prediction": "màu trắ ngđen trắng trắng xanh cây trắng",
+      "normalized_ground_truth": "tông màu đất"
+    },
+    {
+      "index": 139,
+      "prediction": "Lò ưở, vệ , rử, và vệ",
+      "ground_truth": "Kệ sách",
+      "normalized_prediction": "lò ưở vệ rử vệ",
+      "normalized_ground_truth": "kệ sách"
+    },
+    {
+      "index": 140,
+      "prediction": "Bên tònhà sinh cạnh thức của thức n.",
+      "ground_truth": "Bên cạnh nhau",
+      "normalized_prediction": "bên tònhà sinh cạnh thức thức n",
+      "normalized_ground_truth": "bên cạnh nhau"
+    },
+    {
+      "index": 141,
+      "prediction": "Đĩa ăn ăn thức được trên làm trong nướng ăn",
+      "ground_truth": "Máy tính nằm sau thức ăn",
+      "normalized_prediction": "đĩa ăn ăn thức trên làm nướng ăn",
+      "normalized_ground_truth": "máy tính nằm sau thức ăn"
+    },
+    {
+      "index": 142,
+      "prediction": "TV dài ghế ghế đối ghế bàn phê phê ghế",
+      "ground_truth": "Đối diện với nhau",
+      "normalized_prediction": "tv dài ghế ghế đối ghế bàn phê phê ghế",
+      "normalized_ground_truth": "đối diện nhau"
+    },
+    {
+      "index": 143,
+      "prediction": "Bánh rán được bày trên ăn bánh nướng mì",
+      "ground_truth": "Chúng được phục vụ cùng nhau",
+      "normalized_prediction": "bánh rán bày trên ăn bánh nướng mì",
+      "normalized_ground_truth": "chúng phục vụ cùng nhau"
+    },
+    {
+      "index": 144,
+      "prediction": "Lò ưở, nướng nướng trên nướng lò ưở@@",
+      "ground_truth": "Ngồi cạnh nhau",
+      "normalized_prediction": "lò ưở nướng nướng trên nướng lò ưở@@",
+      "normalized_ground_truth": "ngồi cạnh nhau"
+    },
+    {
+      "index": 145,
+      "prediction": "Màu trắ, ngđen trắng trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 146,
+      "prediction": "Lò ưở, ế, vi , và nướng trắng",
+      "ground_truth": "Căn bếp mộc mạc",
+      "normalized_prediction": "lò ưở ế vi nướng trắng",
+      "normalized_ground_truth": "căn bếp mộc mạc"
+    },
+    {
+      "index": 147,
+      "prediction": "Giường giường ghế giường giường một giường chiếc chiếc giường",
+      "ground_truth": "Chúng nằm cạnh nhau",
+      "normalized_prediction": "giường giường ghế giường giường giường chiếc chiếc giường",
+      "normalized_ground_truth": "chúng nằm cạnh nhau"
+    },
+    {
+      "index": 148,
+      "prediction": "Vx, vệ , rửa và cà",
+      "ground_truth": "Có một cái ô",
+      "normalized_prediction": "vx vệ rửa cà",
+      "normalized_ground_truth": "có cái ô"
+    },
+    {
+      "index": 149,
+      "prediction": "Cà cà là phần bữa đầy của thức n.",
+      "ground_truth": "Chúng đang ở trên quầy",
+      "normalized_prediction": "cà cà phần bữa đầy thức n",
+      "normalized_ground_truth": "chúng đang ở trên quầy"
+    },
+    {
+      "index": 150,
+      "prediction": "Xx, cải anhcà và uố@@",
+      "ground_truth": "Một con dao",
+      "normalized_prediction": "xx cải anhcà uố@@",
+      "normalized_ground_truth": "con dao"
+    },
+    {
+      "index": 151,
+      "prediction": "Khô, có là nội của đồ thất ng.",
+      "ground_truth": "Nhiều ghế dài",
+      "normalized_prediction": "khô có nội đồ thất ng",
+      "normalized_ground_truth": "nhiều ghế dài"
+    },
+    {
+      "index": 152,
+      "prediction": "Cây uố, cây ybàn phê sá@@",
+      "ground_truth": "Cạnh một chai",
+      "normalized_prediction": "cây uố cây ybàn phê sá@@",
+      "normalized_ground_truth": "cạnh chai"
+    },
+    {
+      "index": 153,
+      "prediction": "Hai đồ thất và thiết ngoại khác tủ .",
+      "ground_truth": "Hai bức",
+      "normalized_prediction": "hai đồ thất thiết ngoại khác tủ",
+      "normalized_ground_truth": "hai bức"
+    },
+    {
+      "index": 154,
+      "prediction": "Trên ghế giường cạnh sổ, ghế bàn phê ghế",
+      "ground_truth": "Bên cạnh ghế bành",
+      "normalized_prediction": "trên ghế giường cạnh sổ ghế bàn phê ghế",
+      "normalized_ground_truth": "bên cạnh ghế bành"
+    },
+    {
+      "index": 155,
+      "prediction": "TV so, nội là nội của phòng ưở@@",
+      "ground_truth": "Phòng khách dẫn vào phòng ngủ",
+      "normalized_prediction": "tv so nội nội phòng ưở@@",
+      "normalized_ground_truth": "phòng khách dẫn vào phòng ngủ"
+    },
+    {
+      "index": 156,
+      "prediction": "Bên tònhà sinh bên tònhà@@",
+      "ground_truth": "Bên dưới chiếc đèn đôi",
+      "normalized_prediction": "bên tònhà sinh bên tònhà@@",
+      "normalized_ground_truth": "bên dưới chiếc đèn đôi"
+    },
+    {
+      "index": 157,
+      "prediction": "Vx, cà acà và cà",
+      "ground_truth": "Giữa các loại gia vị",
+      "normalized_prediction": "vx cà acà cà",
+      "normalized_ground_truth": "giữa loại gia vị"
+    },
+    {
+      "index": 158,
+      "prediction": "Bên một đồng lớn bên một vực ngoài cỏ",
+      "ground_truth": "Trong hộp trưng bày",
+      "normalized_prediction": "bên đồng lớn bên vực ngoài cỏ",
+      "normalized_ground_truth": "hộp trưng bày"
+    },
+    {
+      "index": 159,
+      "prediction": "Bên một đồng lớn cạnh tường của bức đá",
+      "ground_truth": "Trên bệ cửa sổ",
+      "normalized_prediction": "bên đồng lớn cạnh tường bức đá",
+      "normalized_ground_truth": "trên bệ cửa sổ"
+    },
+    {
+      "index": 160,
+      "prediction": "Bánh rán rán bánh đang trên đặt đĩ@@",
+      "ground_truth": "Nĩa dùng để ăn bánh.",
+      "normalized_prediction": "bánh rán rán bánh đang trên đặt đĩ@@",
+      "normalized_ground_truth": "nĩa dùng ăn bánh"
+    },
+    {
+      "index": 161,
+      "prediction": "Bình rượu rượu được bày bàn phê trên hoa",
+      "ground_truth": "Bình hoa đặt trên bàn",
+      "normalized_prediction": "bình rượu rượu bày bàn phê trên hoa",
+      "normalized_ground_truth": "bình hoa đặt trên bàn"
+    },
+    {
+      "index": 162,
+      "prediction": "Hai chiếc hơ, chiếc hồ nhiều hơ@@",
+      "ground_truth": "Một chiếc",
+      "normalized_prediction": "hai chiếc hơ chiếc hồ nhiều hơ@@",
+      "normalized_ground_truth": "một chiếc"
+    },
+    {
+      "index": 163,
+      "prediction": "Cà anhcà",
+      "ground_truth": "Cà rốt",
+      "normalized_prediction": "cà anhcà",
+      "normalized_ground_truth": "cà rốt"
+    },
+    {
+      "index": 164,
+      "prediction": "Hai bá, miế, nhiều khác sá@@",
+      "ground_truth": "Hai lát",
+      "normalized_prediction": "hai bá miế nhiều khác sá@@",
+      "normalized_ground_truth": "hai lát"
+    },
+    {
+      "index": 165,
+      "prediction": "Trên cạnh aucủa thức bên trên ă@@",
+      "ground_truth": "Trên hộp trưng bày dao",
+      "normalized_prediction": "trên cạnh aucủa thức bên trên ă@@",
+      "normalized_ground_truth": "trên hộp trưng bày dao"
+    },
+    {
+      "index": 166,
+      "prediction": "Dây sợi thừng thừng kéo kéo sợi dây dây thừng",
+      "ground_truth": "Chúng ở cạnh nhau",
+      "normalized_prediction": "dây sợi thừng thừng kéo kéo sợi dây dây thừng",
+      "normalized_ground_truth": "chúng ở cạnh nhau"
+    },
+    {
+      "index": 167,
+      "prediction": "Hai phụ phụ nhiều phụ và con lớ@@",
+      "ground_truth": "Năm con",
+      "normalized_prediction": "hai phụ phụ nhiều phụ con lớ@@",
+      "normalized_ground_truth": "năm con"
+    },
+    {
+      "index": 168,
+      "prediction": "Chúng con thành một lớ, con nhỏ hơn",
+      "ground_truth": "Một con nhỏ, một con lớn hơn",
+      "normalized_prediction": "chúng con thành lớ con nhỏ hơn",
+      "normalized_ground_truth": "con nhỏ con lớn hơn"
+    },
+    {
+      "index": 169,
+      "prediction": "Lò ưở, ế, nướng nướng lò ưở@@",
+      "ground_truth": "Thép không gỉ",
+      "normalized_prediction": "lò ưở ế nướng nướng lò ưở@@",
+      "normalized_ground_truth": "thép không gỉ"
+    },
+    {
+      "index": 170,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu be",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu be"
+    },
+    {
+      "index": 171,
+      "prediction": "Lò ưở, nướng nướng và nướng trong ế@@",
+      "ground_truth": "Căn bếp rất bừa bộn",
+      "normalized_prediction": "lò ưở nướng nướng nướng ế@@",
+      "normalized_ground_truth": "căn bếp rất bừa bộn"
+    },
+    {
+      "index": 172,
+      "prediction": "Hoa uố, ochicam trắ,",
+      "ground_truth": "Hoa trắng",
+      "normalized_prediction": "hoa uố ochicam trắ",
+      "normalized_ground_truth": "hoa trắng"
+    },
+    {
+      "index": 173,
+      "prediction": "Trong cái x, bàn bên bồn a. bàn gỗ",
+      "ground_truth": "Trên thớt",
+      "normalized_prediction": "cái x bàn bên bồn a bàn gỗ",
+      "normalized_ground_truth": "trên thớt"
+    },
+    {
+      "index": 174,
+      "prediction": "Túi lý lý được trên trong trong chứa túi lý",
+      "ground_truth": "Cả hai đều được trưng bày",
+      "normalized_prediction": "túi lý lý trên chứa túi lý",
+      "normalized_ground_truth": "cả hai đều trưng bày"
+    },
+    {
+      "index": 175,
+      "prediction": "TV ghế sofa ghế ghế đối ghế bàn phê phê ghế giường ngủ ghế ghếgiường giường ghế phê ghếbàn việc ghế tivi ghế thảm ghế sàn ghế TV",
+      "ground_truth": "Ghế sofa bao quanh TV",
+      "normalized_prediction": "tv ghế sofa ghế ghế đối ghế bàn phê phê ghế giường ngủ ghế ghếgiường giường ghế phê ghếbàn việc ghế tivi ghế thảm ghế sàn ghế tv",
+      "normalized_ground_truth": "ghế sofa bao quanh tv"
+    },
+    {
+      "index": 176,
+      "prediction": "Lò ưở, vệ , rửa và rửa trong tắm",
+      "ground_truth": "Vừa khít",
+      "normalized_prediction": "lò ưở vệ rửa rửa tắm",
+      "normalized_ground_truth": "vừa khít"
+    },
+    {
+      "index": 177,
+      "prediction": "Bồn rửa rửa bồn và vệ đều trong tắ@@",
+      "ground_truth": "Hai bồn rửa nằm trên quầy",
+      "normalized_prediction": "bồn rửa rửa bồn vệ đều tắ@@",
+      "normalized_ground_truth": "hai bồn rửa nằm trên quầy"
+    },
+    {
+      "index": 178,
+      "prediction": "Bồn rử, vệ , rửa nhà sinhbồn",
+      "ground_truth": "Bồn tắm, nhà vệ sinh, bồn rửa",
+      "normalized_prediction": "bồn rử vệ rửa nhà sinhbồn",
+      "normalized_ground_truth": "bồn tắm nhà vệ sinh bồn rửa"
+    },
+    {
+      "index": 179,
+      "prediction": "Trên đồng và đá trong trường của viên nước",
+      "ground_truth": "Dưới làn nước xanh",
+      "normalized_prediction": "trên đồng đá trường viên nước",
+      "normalized_ground_truth": "dưới làn nước xanh"
+    },
+    {
+      "index": 180,
+      "prediction": "Gương rửa rửa ở trên rửa trong tắm bồn",
+      "ground_truth": "Cả hai đều có trong phòng",
+      "normalized_prediction": "gương rửa rửa ở trên rửa tắm bồn",
+      "normalized_ground_truth": "cả hai đều có phòng"
+    },
+    {
+      "index": 181,
+      "prediction": "Phpper, x, chu, và tây",
+      "ground_truth": "Thịt và phô mai",
+      "normalized_prediction": "phpper x chu tây",
+      "normalized_ground_truth": "thịt phô mai"
+    },
+    {
+      "index": 182,
+      "prediction": "Tháp hồ ánh trời sáng sáng chiếu đèn sáng sổ",
+      "ground_truth": "Đồng hồ được treo trên đèn chùm",
+      "normalized_prediction": "tháp hồ ánh trời sáng sáng chiếu đèn sáng sổ",
+      "normalized_ground_truth": "đồng hồ treo trên đèn chùm"
+    },
+    {
+      "index": 183,
+      "prediction": "Đứa trẻ chăm chăm đứa nhìn đứa lớ@@",
+      "ground_truth": "Em bé nằm gần laptop",
+      "normalized_prediction": "đứa trẻ chăm chăm đứa nhìn đứa lớ@@",
+      "normalized_ground_truth": "em bé nằm gần laptop"
+    },
+    {
+      "index": 184,
+      "prediction": "Trên giường giường ghế giường cạnh và ghế bàn phê",
+      "ground_truth": "Trong một căn phòng",
+      "normalized_prediction": "trên giường giường ghế giường cạnh ghế bàn phê",
+      "normalized_ground_truth": "căn phòng"
+    },
+    {
+      "index": 185,
+      "prediction": "Tháp hồ hồ nổi nổi hồ trên đồng .",
+      "ground_truth": "Đồng hồ đặt trên bánh",
+      "normalized_prediction": "tháp hồ hồ nổi nổi hồ trên đồng",
+      "normalized_ground_truth": "đồng hồ đặt trên bánh"
+    },
+    {
+      "index": 186,
+      "prediction": "Bồn tắm nhà sinh ở phòng trong tắm trong tắ@@",
+      "ground_truth": "Ngang sàn",
+      "normalized_prediction": "bồn tắm nhà sinh ở phòng tắm tắ@@",
+      "normalized_ground_truth": "ngang sàn"
+    },
+    {
+      "index": 187,
+      "prediction": "Màu trắ, nâ, ngđen trắng trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ nâ ngđen trắng trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 188,
+      "prediction": "Lò ưở, ế, nướng nướng lò ưở@@",
+      "ground_truth": "Nhiều loại gia vị khác nhau.",
+      "normalized_prediction": "lò ưở ế nướng nướng lò ưở@@",
+      "normalized_ground_truth": "nhiều loại gia vị khác nhau"
+    },
+    {
+      "index": 189,
+      "prediction": "Lò ưở, so, vệ , cà",
+      "ground_truth": "Ghế sofa và ghế dài",
+      "normalized_prediction": "lò ưở so vệ cà",
+      "normalized_ground_truth": "ghế sofa ghế dài"
+    },
+    {
+      "index": 190,
+      "prediction": "Tháp hồ phía tònhà sinh và tường gạch",
+      "ground_truth": "Kế bên bức tường",
+      "normalized_prediction": "tháp hồ phía tònhà sinh tường gạch",
+      "normalized_ground_truth": "kế bên bức tường"
+    },
+    {
+      "index": 191,
+      "prediction": "Màu trắ, ngđen trắng xanh cây trắng trắng",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh cây trắng trắng",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 192,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu đỏ",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu đỏ"
+    },
+    {
+      "index": 193,
+      "prediction": "Màu trắ, ngđen trắng trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 194,
+      "prediction": "Bông x, cải anhkhoai và tây",
+      "ground_truth": "Đĩa cơm và nước thịt",
+      "normalized_prediction": "bông x cải anhkhoai tây",
+      "normalized_ground_truth": "đĩa cơm nước thịt"
+    },
+    {
+      "index": 195,
+      "prediction": "Bông x, rốt cà acà và tây",
+      "ground_truth": "Thịt, gạo và bông cải xanh",
+      "normalized_prediction": "bông x rốt cà acà tây",
+      "normalized_ground_truth": "thịt gạo bông cải xanh"
+    },
+    {
+      "index": 196,
+      "prediction": "Một cái x, cái màu và cái",
+      "ground_truth": "Giấy bạc",
+      "normalized_prediction": "cái x cái màu cái",
+      "normalized_ground_truth": "giấy bạc"
+    },
+    {
+      "index": 197,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 198,
+      "prediction": "Chúng là thành của bữa đầy đầy đủ vị@@",
+      "ground_truth": "Cả hai đều là thành phần món ăn.",
+      "normalized_prediction": "chúng thành bữa đầy đầy đủ vị@@",
+      "normalized_ground_truth": "cả hai đều thành phần món ăn"
+    },
+    {
+      "index": 199,
+      "prediction": "Hai chiếc x, chiếc bá, cái",
+      "ground_truth": "Hai chiếc",
+      "normalized_prediction": "hai chiếc x chiếc bá cái",
+      "normalized_ground_truth": "hai chiếc"
+    },
+    {
+      "index": 200,
+      "prediction": "Bánh x, uố, chu, và tây",
+      "ground_truth": "Cơm, các loại hạt và trứng",
+      "normalized_prediction": "bánh x uố chu tây",
+      "normalized_ground_truth": "cơm loại hạt trứng"
+    },
+    {
+      "index": 201,
+      "prediction": "Màu trắ, ngđen trắng trắng xanh trắ@@",
+      "ground_truth": "Toàn màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng trắng xanh trắ@@",
+      "normalized_ground_truth": "toàn màu trắng"
+    },
+    {
+      "index": 202,
+      "prediction": "Vvệ , vệ và rửa nhà sinh gạch",
+      "ground_truth": "Một loạt các bức tường kính",
+      "normalized_prediction": "vvệ vệ rửa nhà sinh gạch",
+      "normalized_ground_truth": "loạt bức tường kính"
+    },
+    {
+      "index": 203,
+      "prediction": "TV rán ăn ngoài sổ nhìn cửa cửa . lạnh",
+      "ground_truth": "Cửa sổ cho phép nhìn vào",
+      "normalized_prediction": "tv rán ăn ngoài sổ nhìn cửa cửa lạnh",
+      "normalized_ground_truth": "cửa sổ cho phép nhìn vào"
+    },
+    {
+      "index": 204,
+      "prediction": "Đàn súc súc ở sau tải của xe ý@@",
+      "ground_truth": "Chỉ là đồ trang trí",
+      "normalized_prediction": "đàn súc súc ở sau tải xe ý@@",
+      "normalized_ground_truth": "chỉ đồ trang trí"
+    },
+    {
+      "index": 205,
+      "prediction": "Bồn tắm nhà sinh ở tònhà cửa trong tắm",
+      "ground_truth": "Nhà vệ sinh cạnh tấm thảm",
+      "normalized_prediction": "bồn tắm nhà sinh ở tònhà cửa tắm",
+      "normalized_ground_truth": "nhà vệ sinh cạnh tấm thảm"
+    },
+    {
+      "index": 206,
+      "prediction": "Hai ly vang vang ba rượu vang ly phê",
+      "ground_truth": "Hai chai",
+      "normalized_prediction": "hai ly vang vang ba rượu vang ly phê",
+      "normalized_ground_truth": "hai chai"
+    },
+    {
+      "index": 207,
+      "prediction": "Hai thiết bàn bàn việc hai tính tay bàn m.",
+      "ground_truth": "Năm chiếc",
+      "normalized_prediction": "hai thiết bàn bàn việc hai tính tay bàn m",
+      "normalized_ground_truth": "năm chiếc"
+    },
+    {
+      "index": 208,
+      "prediction": "Hai loạ, loại phẩm thiết thiết nhiều khác",
+      "ground_truth": "Có lẽ bốn loại.",
+      "normalized_prediction": "hai loạ loại phẩm thiết thiết nhiều khác",
+      "normalized_ground_truth": "có lẽ bốn loại"
+    },
+    {
+      "index": 209,
+      "prediction": "Xx, rốt cà acà và tây",
+      "ground_truth": "Kem tươi và xi-rô",
+      "normalized_prediction": "xx rốt cà acà tây",
+      "normalized_ground_truth": "kem tươi xi-rô"
+    },
+    {
+      "index": 210,
+      "prediction": "Bồn tắm tắm nhà sinh trong tắm trong tắ@@",
+      "ground_truth": "Bồn tắm mở ra phòng ngủ",
+      "normalized_prediction": "bồn tắm tắm nhà sinh tắm tắ@@",
+      "normalized_ground_truth": "bồn tắm mở ra phòng ngủ"
+    },
+    {
+      "index": 211,
+      "prediction": "Hai món ăn nhiều khác , loại khác .",
+      "ground_truth": "Hai đĩa",
+      "normalized_prediction": "hai món ăn nhiều khác loại khác",
+      "normalized_ground_truth": "hai đĩa"
+    },
+    {
+      "index": 212,
+      "prediction": "Hai tính tính máy xách và tính bàn việc",
+      "ground_truth": "Bốn",
+      "normalized_prediction": "hai tính tính máy xách tính bàn việc",
+      "normalized_ground_truth": "bốn"
+    },
+    {
+      "index": 213,
+      "prediction": "Quả quả và quả được bày nh.",
+      "ground_truth": "Khuôn mặt cười",
+      "normalized_prediction": "quả quả quả bày nh",
+      "normalized_ground_truth": "khuôn mặt cười"
+    },
+    {
+      "index": 214,
+      "prediction": "Bàn phê phê cà nằm bàn bàn việc bàn phê",
+      "ground_truth": "Chúng ngồi cạnh nhau",
+      "normalized_prediction": "bàn phê phê cà nằm bàn bàn việc bàn phê",
+      "normalized_ground_truth": "chúng ngồi cạnh nhau"
+    },
+    {
+      "index": 215,
+      "prediction": "Bồn rửa ở tủ ế, rửa và nướng nướng bếp",
+      "ground_truth": "Tủ bằng gỗ, quầy bằng đá",
+      "normalized_prediction": "bồn rửa ở tủ ế rửa nướng nướng bếp",
+      "normalized_ground_truth": "tủ bằng gỗ quầy bằng đá"
+    },
+    {
+      "index": 216,
+      "prediction": "Bánh nướng nướng thức được trên ăn với thức ng.",
+      "ground_truth": "Chúng cùng nằm trên đĩa",
+      "normalized_prediction": "bánh nướng nướng thức trên ăn thức ng",
+      "normalized_ground_truth": "chúng cùng nằm trên đĩa"
+    },
+    {
+      "index": 217,
+      "prediction": "Bàn tính tay bàn việc bàn đặt bàn việ@@",
+      "ground_truth": "Laptop đặt trên bàn",
+      "normalized_prediction": "bàn tính tay bàn việc bàn đặt bàn việ@@",
+      "normalized_ground_truth": "laptop đặt trên bàn"
+    },
+    {
+      "index": 218,
+      "prediction": "Hai vật trí, vật và vật đồ trí@@",
+      "ground_truth": "Bốn vật dụng",
+      "normalized_prediction": "hai vật trí vật vật đồ trí@@",
+      "normalized_ground_truth": "bốn vật dụng"
+    },
+    {
+      "index": 219,
+      "prediction": "Giường giường giường ngủ giường được trên trong ngủ phòng",
+      "ground_truth": "Sách đặt trên bộ đồ giường",
+      "normalized_prediction": "giường giường giường ngủ giường trên ngủ phòng",
+      "normalized_ground_truth": "sách đặt trên bộ đồ giường"
+    },
+    {
+      "index": 220,
+      "prediction": "Cà uố, ocà acà và uố@@",
+      "ground_truth": "Táo.",
+      "normalized_prediction": "cà uố ocà acà uố@@",
+      "normalized_ground_truth": "táo"
+    },
+    {
+      "index": 221,
+      "prediction": "Ghế ghế bàn phê ghế ghế đối ghế phê phê ghế@@",
+      "ground_truth": "Chúng nằm gần bàn cà phê",
+      "normalized_prediction": "ghế ghế bàn phê ghế ghế đối ghế phê phê ghế@@",
+      "normalized_ground_truth": "chúng nằm gần bàn cà phê"
+    },
+    {
+      "index": 222,
+      "prediction": "Các trang có là phần bữa đầy sá@@",
+      "ground_truth": "Vẽ tay",
+      "normalized_prediction": "trang có phần bữa đầy sá@@",
+      "normalized_ground_truth": "vẽ tay"
+    },
+    {
+      "index": 223,
+      "prediction": "Bánh phê phê ăn thức được trên ăn bàn phê",
+      "ground_truth": "Được đặt cạnh nhau",
+      "normalized_prediction": "bánh phê phê ăn thức trên ăn bàn phê",
+      "normalized_ground_truth": "đặt cạnh nhau"
+    },
+    {
+      "index": 224,
+      "prediction": "Màu ng, xanh trắ, ngxanh cây trắng",
+      "ground_truth": "Màu vàng",
+      "normalized_prediction": "màu ng xanh trắ ngxanh cây trắng",
+      "normalized_ground_truth": "màu vàng"
+    },
+    {
+      "index": 225,
+      "prediction": "Lò ưở, nướng dưới vi , lò ưở@@",
+      "ground_truth": "Bếp lò ở dưới quạt hút",
+      "normalized_prediction": "lò ưở nướng dưới vi lò ưở@@",
+      "normalized_ground_truth": "bếp lò ở dưới quạt hút"
+    },
+    {
+      "index": 226,
+      "prediction": "Hai chiếc rửa nhà sinh hai bồn bồn",
+      "ground_truth": "Hai chiếc",
+      "normalized_prediction": "hai chiếc rửa nhà sinh hai bồn bồn",
+      "normalized_ground_truth": "hai chiếc"
+    },
+    {
+      "index": 227,
+      "prediction": "Lò ưở, so, , rửa , rử, cà",
+      "ground_truth": "Giường, 2 ghế, bàn làm việc, tivi",
+      "normalized_prediction": "lò ưở so rửa rử cà",
+      "normalized_ground_truth": "giường 2 ghế bàn làm việc tivi"
+    },
+    {
+      "index": 228,
+      "prediction": "Máy tính tay bàn việc bàn trên làm bàn học",
+      "ground_truth": "Chúng ở gần nhau",
+      "normalized_prediction": "máy tính tay bàn việc bàn trên làm bàn học",
+      "normalized_ground_truth": "chúng ở gần nhau"
+    },
+    {
+      "index": 229,
+      "prediction": "Con con và mèo ngồi bàn phê phê m.",
+      "ground_truth": "Một con mèo nhồi bông chết",
+      "normalized_prediction": "con con mèo ngồi bàn phê phê m",
+      "normalized_ground_truth": "con mèo nhồi bông chết"
+    },
+    {
+      "index": 230,
+      "prediction": "Lò ưở, vệ , rử, rửa bàn phê",
+      "ground_truth": "Gỗ",
+      "normalized_prediction": "lò ưở vệ rử rửa bàn phê",
+      "normalized_ground_truth": "gỗ"
+    },
+    {
+      "index": 231,
+      "prediction": "Bên một đĩa ă, bàn bên bàn ăn",
+      "ground_truth": "Trên bàn",
+      "normalized_prediction": "bên đĩa ă bàn bên bàn ăn",
+      "normalized_ground_truth": "trên bàn"
+    },
+    {
+      "index": 232,
+      "prediction": "Người nữ đang thức cho ă, trẻ ăn",
+      "ground_truth": "Đứa trẻ vừa mút ngón cái vừa cầm thức ăn",
+      "normalized_prediction": "người nữ đang thức cho ă trẻ ăn",
+      "normalized_ground_truth": "đứa trẻ vừa mút ngón cái vừa cầm thức ăn"
+    },
+    {
+      "index": 233,
+      "prediction": "Bông x, cải là thành của bữa đầy",
+      "ground_truth": "Chúng trộn lẫn với nhau",
+      "normalized_prediction": "bông x cải thành bữa đầy",
+      "normalized_ground_truth": "chúng trộn lẫn nhau"
+    },
+    {
+      "index": 234,
+      "prediction": "Hai vệ , phòng phòng và phòng nhà sinh",
+      "ground_truth": "Hai phòng",
+      "normalized_prediction": "hai vệ phòng phòng phòng nhà sinh",
+      "normalized_ground_truth": "hai phòng"
+    },
+    {
+      "index": 235,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu xanh",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu xanh"
+    },
+    {
+      "index": 236,
+      "prediction": "Họ chụp chụp kỷ một gì để bá@@",
+      "ground_truth": "Họ đang đứng",
+      "normalized_prediction": "họ chụp chụp kỷ gì bá@@",
+      "normalized_ground_truth": "họ đang đứng"
+    },
+    {
+      "index": 237,
+      "prediction": "Bánh tráng bánh được bày bánh nướng trên mì",
+      "ground_truth": "Chuối thái lát đi kèm bánh quế",
+      "normalized_prediction": "bánh tráng bánh bày bánh nướng trên mì",
+      "normalized_ground_truth": "chuối thái lát đi kèm bánh quế"
+    },
+    {
+      "index": 238,
+      "prediction": "Bông x, cải anhcà và cải",
+      "ground_truth": "Bên trong chảo",
+      "normalized_prediction": "bông x cải anhcà cải",
+      "normalized_ground_truth": "bên chảo"
+    },
+    {
+      "index": 239,
+      "prediction": "Hai x, rốt khoai chiê, tây",
+      "ground_truth": "Hai phần",
+      "normalized_prediction": "hai x rốt khoai chiê tây",
+      "normalized_ground_truth": "hai phần"
+    },
+    {
+      "index": 240,
+      "prediction": "Bông x, rốt cà acà và tây",
+      "ground_truth": "Bông cải xanh, đậu xanh, cà chua",
+      "normalized_prediction": "bông x rốt cà acà tây",
+      "normalized_ground_truth": "bông cải xanh đậu xanh cà chua"
+    },
+    {
+      "index": 241,
+      "prediction": "Vx, vệ , cà và vệ",
+      "ground_truth": "Ghế được phủ vải",
+      "normalized_prediction": "vx vệ cà vệ",
+      "normalized_ground_truth": "ghế phủ vải"
+    },
+    {
+      "index": 242,
+      "prediction": "Màu trắ, ngđen trắng trắng xanh trắ@@",
+      "ground_truth": "Phòng tắm màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng trắng xanh trắ@@",
+      "normalized_ground_truth": "phòng tắm màu trắng"
+    },
+    {
+      "index": 243,
+      "prediction": "Bên tònhà bên một của cái gỗ",
+      "ground_truth": "Trên thùng rác",
+      "normalized_prediction": "bên tònhà bên cái gỗ",
+      "normalized_ground_truth": "trên thùng rác"
+    },
+    {
+      "index": 244,
+      "prediction": "Hai ghế ghế ghế, chiếc ghế nhiều ghế",
+      "ground_truth": "Hai chiếc",
+      "normalized_prediction": "hai ghế ghế ghế chiếc ghế nhiều ghế",
+      "normalized_ground_truth": "hai chiếc"
+    },
+    {
+      "index": 245,
+      "prediction": "Bồn tắm nhà sinh cạnh vệ trong tắm phòng tắm",
+      "ground_truth": "Nằm gần nhau",
+      "normalized_prediction": "bồn tắm nhà sinh cạnh vệ tắm phòng tắm",
+      "normalized_ground_truth": "nằm gần nhau"
+    },
+    {
+      "index": 246,
+      "prediction": "Bồn rửa nhà sinh trong tắm nhà si@@",
+      "ground_truth": "Chúng nằm cạnh nhau",
+      "normalized_prediction": "bồn rửa nhà sinh tắm nhà si@@",
+      "normalized_ground_truth": "chúng nằm cạnh nhau"
+    },
+    {
+      "index": 247,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Đen",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "đen"
+    },
+    {
+      "index": 248,
+      "prediction": "Trong ế, lò ưở, nướng bàn phê trắng",
+      "ground_truth": "Trên quầy",
+      "normalized_prediction": "ế lò ưở nướng bàn phê trắng",
+      "normalized_ground_truth": "trên quầy"
+    },
+    {
+      "index": 249,
+      "prediction": "TV rửa và vệ đều đồ trong tắm trong tắ@@",
+      "ground_truth": "Tủ lạnh gần quầy và giường ở phòng khác",
+      "normalized_prediction": "tv rửa vệ đều đồ tắm tắ@@",
+      "normalized_ground_truth": "tủ lạnh gần quầy giường ở phòng khác"
+    },
+    {
+      "index": 250,
+      "prediction": "Bánh nướng nướng bánh được bày trên nướng mì",
+      "ground_truth": "Cả hai đều là đồ ăn",
+      "normalized_prediction": "bánh nướng nướng bánh bày trên nướng mì",
+      "normalized_ground_truth": "cả hai đều đồ ăn"
+    },
+    {
+      "index": 251,
+      "prediction": "TV so, tí, và hình đen trắng",
+      "ground_truth": "SpongeBob SquarePants",
+      "normalized_prediction": "tv so tí hình đen trắng",
+      "normalized_ground_truth": "spongebob squarepants"
+    },
+    {
+      "index": 252,
+      "prediction": "Cà uố, ocà acà và uố@@",
+      "ground_truth": "Chuối, cam và lê",
+      "normalized_prediction": "cà uố ocà acà uố@@",
+      "normalized_ground_truth": "chuối cam lê"
+    },
+    {
+      "index": 253,
+      "prediction": "Lò ưở, vi , rửa , nướng bàn phê",
+      "ground_truth": "Bên cạnh tủ lạnh",
+      "normalized_prediction": "lò ưở vi rửa nướng bàn phê",
+      "normalized_ground_truth": "bên cạnh tủ lạnh"
+    },
+    {
+      "index": 254,
+      "prediction": "Các ăn là thành của bữa đầy đủ đủ cân",
+      "ground_truth": "Chúng là một bữa ăn đầy đủ",
+      "normalized_prediction": "ăn thành bữa đầy đủ đủ cân",
+      "normalized_ground_truth": "chúng bữa ăn đầy đủ"
+    },
+    {
+      "index": 255,
+      "prediction": "Một uố, vệ và vật trong vệ nh.",
+      "ground_truth": "Một cái cây",
+      "normalized_prediction": "uố vệ vật vệ nh",
+      "normalized_ground_truth": "cái cây"
+    },
+    {
+      "index": 256,
+      "prediction": "Để nấu món mới nhiều ăn cân có nướng nướng",
+      "ground_truth": "Để nấu một bữa ăn lớn",
+      "normalized_prediction": "nấu món mới nhiều ăn cân có nướng nướng",
+      "normalized_ground_truth": "nấu bữa ăn lớn"
+    },
+    {
+      "index": 257,
+      "prediction": "Cà anhcà",
+      "ground_truth": "Đậu Hà Lan, cà rốt, bông cải xanh",
+      "normalized_prediction": "cà anhcà",
+      "normalized_ground_truth": "đậu hà lan cà rốt bông cải xanh"
+    },
+    {
+      "index": 258,
+      "prediction": "Cây uố, quả được quanh bởi cây",
+      "ground_truth": "Bát thủy tinh chứa trái cây",
+      "normalized_prediction": "cây uố quả quanh bởi cây",
+      "normalized_ground_truth": "bát thủy tinh chứa trái cây"
+    },
+    {
+      "index": 259,
+      "prediction": "Vì thể đang thức cho sá. nó hơ@@",
+      "ground_truth": "Tóc và quần áo độc đáo",
+      "normalized_prediction": "vì thể đang thức cho sá nó hơ@@",
+      "normalized_ground_truth": "tóc quần áo độc đáo"
+    },
+    {
+      "index": 260,
+      "prediction": "Tònhà có là sáng của nhà@@",
+      "ground_truth": "Trần nhà cao",
+      "normalized_prediction": "tònhà có sáng nhà@@",
+      "normalized_ground_truth": "trần nhà cao"
+    },
+    {
+      "index": 261,
+      "prediction": "Bồn anhà sinhlò ưở, vệ , rửa",
+      "ground_truth": "Gốm",
+      "normalized_prediction": "bồn anhà sinhlò ưở vệ rửa",
+      "normalized_ground_truth": "gốm"
+    },
+    {
+      "index": 262,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 263,
+      "prediction": "Lò ưở, vệ , rửa nhà sinh bồn",
+      "ground_truth": "Bên cạnh bếp",
+      "normalized_prediction": "lò ưở vệ rửa nhà sinh bồn",
+      "normalized_ground_truth": "bên cạnh bếp"
+    },
+    {
+      "index": 264,
+      "prediction": "Hai cái uố, chiếc bá, cái",
+      "ground_truth": "Mấy cái",
+      "normalized_prediction": "hai cái uố chiếc bá cái",
+      "normalized_ground_truth": "mấy cái"
+    },
+    {
+      "index": 265,
+      "prediction": "Hai tá, nhiều khác nhba quả@@",
+      "ground_truth": "Hai củ",
+      "normalized_prediction": "hai tá nhiều khác nhba quả@@",
+      "normalized_ground_truth": "hai củ"
+    },
+    {
+      "index": 266,
+      "prediction": "Xx, chu, cà và tây",
+      "ground_truth": "Khoai tây chiên và bánh mì kẹp",
+      "normalized_prediction": "xx chu cà tây",
+      "normalized_ground_truth": "khoai tây chiên bánh mì kẹp"
+    },
+    {
+      "index": 267,
+      "prediction": "Bình bình hơ, là phần trang của sáng",
+      "ground_truth": "Khác nhau",
+      "normalized_prediction": "bình bình hơ phần trang sáng",
+      "normalized_ground_truth": "khác nhau"
+    },
+    {
+      "index": 268,
+      "prediction": "Bông x, rốt cà acà và tây",
+      "ground_truth": "Đậu Hà Lan và cà rốt",
+      "normalized_prediction": "bông x rốt cà acà tây",
+      "normalized_ground_truth": "đậu hà lan cà rốt"
+    },
+    {
+      "index": 269,
+      "prediction": "Đĩa cà được bày trên làm bàn việc bàn phê",
+      "ground_truth": "Các bình đặt trên bàn",
+      "normalized_prediction": "đĩa cà bày trên làm bàn việc bàn phê",
+      "normalized_ground_truth": "bình đặt trên bàn"
+    },
+    {
+      "index": 270,
+      "prediction": "Bên tònhà sinh bên một tường gạch",
+      "ground_truth": "Trong tủ tuỳ chỉnh",
+      "normalized_prediction": "bên tònhà sinh bên tường gạch",
+      "normalized_ground_truth": "tủ tuỳ chỉnh"
+    },
+    {
+      "index": 271,
+      "prediction": "Màu trắ, ngtrắng xanh cây trắ@@",
+      "ground_truth": "Màu vàng",
+      "normalized_prediction": "màu trắ ngtrắng xanh cây trắ@@",
+      "normalized_ground_truth": "màu vàng"
+    },
+    {
+      "index": 272,
+      "prediction": "TV ghế bàn phê ghế ghế đối ghế ghếbàn việc ghế phê phê đồ thất",
+      "ground_truth": "Chúng nằm cạnh nhau",
+      "normalized_prediction": "tv ghế bàn phê ghế ghế đối ghế ghếbàn việc ghế phê phê đồ thất",
+      "normalized_ground_truth": "chúng nằm cạnh nhau"
+    },
+    {
+      "index": 273,
+      "prediction": "Bánh rán kem kem được bày trong sáng bánh",
+      "ground_truth": "Kem tươi bên cạnh bánh",
+      "normalized_prediction": "bánh rán kem kem bày sáng bánh",
+      "normalized_ground_truth": "kem tươi bên cạnh bánh"
+    },
+    {
+      "index": 274,
+      "prediction": "Bánh được bày bánh được trong bữa đầy đầy tráng",
+      "ground_truth": "Kem tươi phủ trên món tráng miệng",
+      "normalized_prediction": "bánh bày bánh bữa đầy đầy tráng",
+      "normalized_ground_truth": "kem tươi phủ trên món tráng miệng"
+    },
+    {
+      "index": 275,
+      "prediction": "Bồn rử, vệ , rửa nhà sinhbồn",
+      "ground_truth": "Có bồn tắm, nhà vệ sinh và bồn rửa",
+      "normalized_prediction": "bồn rử vệ rửa nhà sinhbồn",
+      "normalized_ground_truth": "có bồn tắm nhà vệ sinh bồn rửa"
+    },
+    {
+      "index": 276,
+      "prediction": "TV ối ối giường giường ghế nằm bàn việc bàn phê ghế giường dưới",
+      "ground_truth": "Đặt gần nhau",
+      "normalized_prediction": "tv ối ối giường giường ghế nằm bàn việc bàn phê ghế giường dưới",
+      "normalized_ground_truth": "đặt gần nhau"
+    },
+    {
+      "index": 277,
+      "prediction": "Lò ưở, vệ , rửa nhà sinhlò",
+      "ground_truth": "Sàn gỗ cứng",
+      "normalized_prediction": "lò ưở vệ rửa nhà sinhlò",
+      "normalized_ground_truth": "sàn gỗ cứng"
+    },
+    {
+      "index": 278,
+      "prediction": "Bánh đĩa ăn bánh và đĩa trên ăn bàn",
+      "ground_truth": "Đĩa màu hồng",
+      "normalized_prediction": "bánh đĩa ăn bánh đĩa trên ăn bàn",
+      "normalized_ground_truth": "đĩa màu hồng"
+    },
+    {
+      "index": 279,
+      "prediction": "Hai s, , so, nhiều sá,",
+      "ground_truth": "Bốn đồ nội thất chính",
+      "normalized_prediction": "hai s so nhiều sá",
+      "normalized_ground_truth": "bốn đồ nội thất chính"
+    },
+    {
+      "index": 280,
+      "prediction": "Hai chiếc máy xách thoại thoại chiếc chiếc thoại",
+      "ground_truth": "Sáu chiếc",
+      "normalized_prediction": "hai chiếc máy xách thoại thoại chiếc chiếc thoại",
+      "normalized_ground_truth": "sáu chiếc"
+    },
+    {
+      "index": 281,
+      "prediction": "Bồn ế, vệ , sổ và rửa nhà sinh",
+      "ground_truth": "Phòng khách",
+      "normalized_prediction": "bồn ế vệ sổ rửa nhà sinh",
+      "normalized_ground_truth": "phòng khách"
+    },
+    {
+      "index": 282,
+      "prediction": "TV phòng là nội của phòng và phòng thất",
+      "ground_truth": "Có nhiều đồ chơi",
+      "normalized_prediction": "tv phòng nội phòng phòng thất",
+      "normalized_ground_truth": "có nhiều đồ chơi"
+    },
+    {
+      "index": 283,
+      "prediction": "Ly cà được quanh trong trang của uố@@",
+      "ground_truth": "Đôi giày ở cạnh chiếc bình",
+      "normalized_prediction": "ly cà quanh trang uố@@",
+      "normalized_ground_truth": "đôi giày ở cạnh chiếc bình"
+    },
+    {
+      "index": 284,
+      "prediction": "Trên đồng và vực ngoài ngoài của nhà sinh",
+      "ground_truth": "Bên trong tòa nhà",
+      "normalized_prediction": "trên đồng vực ngoài ngoài nhà sinh",
+      "normalized_ground_truth": "bên tòa nhà"
+    },
+    {
+      "index": 285,
+      "prediction": "Lò ưở, nướng nướng trên nướng lò ưở@@",
+      "ground_truth": "Lò vi sóng ở gần tủ gỗ",
+      "normalized_prediction": "lò ưở nướng nướng trên nướng lò ưở@@",
+      "normalized_ground_truth": "lò vi sóng ở gần tủ gỗ"
+    },
+    {
+      "index": 286,
+      "prediction": "Bông rốt rốt cà được để trên củ@@",
+      "ground_truth": "Bông cải xanh nằm trên thớt",
+      "normalized_prediction": "bông rốt rốt cà trên củ@@",
+      "normalized_ground_truth": "bông cải xanh nằm trên thớt"
+    },
+    {
+      "index": 287,
+      "prediction": "Hai đĩa ă, đĩa ăn nhiều khác",
+      "ground_truth": "Ba cái",
+      "normalized_prediction": "hai đĩa ă đĩa ăn nhiều khác",
+      "normalized_ground_truth": "ba cái"
+    },
+    {
+      "index": 288,
+      "prediction": "Lò nướng lò ưở, nướng trên nướng nướng bếp",
+      "ground_truth": "Đảo nằm cạnh lò nướng",
+      "normalized_prediction": "lò nướng lò ưở nướng trên nướng nướng bếp",
+      "normalized_ground_truth": "đảo nằm cạnh lò nướng"
+    },
+    {
+      "index": 289,
+      "prediction": "Màu trắ, ngđen trắng trắng trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng trắng trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 290,
+      "prediction": "Lò ưở, nướng nướng đặt lò ưở@@",
+      "ground_truth": "Chúng ở cạnh nhau",
+      "normalized_prediction": "lò ưở nướng nướng đặt lò ưở@@",
+      "normalized_ground_truth": "chúng ở cạnh nhau"
+    },
+    {
+      "index": 291,
+      "prediction": "Vng, vệ , rửa và vệ trắng",
+      "ground_truth": "Nhỏ, trắng và bẩn thỉu",
+      "normalized_prediction": "vng vệ rửa vệ trắng",
+      "normalized_ground_truth": "nhỏ trắng bẩn thỉu"
+    },
+    {
+      "index": 292,
+      "prediction": "Quầy bar bar bàn phê ở quầy ăn bếp bếp",
+      "ground_truth": "Đều là nội thất bếp",
+      "normalized_prediction": "quầy bar bar bàn phê ở quầy ăn bếp bếp",
+      "normalized_ground_truth": "đều nội thất bếp"
+    },
+    {
+      "index": 293,
+      "prediction": "Bánh x, chu, cải và tây",
+      "ground_truth": "Thịt, gạo, bông cải xanh",
+      "normalized_prediction": "bánh x chu cải tây",
+      "normalized_ground_truth": "thịt gạo bông cải xanh"
+    },
+    {
+      "index": 294,
+      "prediction": "Bánh rán rán nướng rán đặt khăn trên nướng bánh",
+      "ground_truth": "Đặt ở phía sau",
+      "normalized_prediction": "bánh rán rán nướng rán đặt khăn trên nướng bánh",
+      "normalized_ground_truth": "đặt ở phía sau"
+    },
+    {
+      "index": 295,
+      "prediction": "Hai cái x, chiếc xách và cái lạnh",
+      "ground_truth": "Năm vật dụng",
+      "normalized_prediction": "hai cái x chiếc xách cái lạnh",
+      "normalized_ground_truth": "năm vật dụng"
+    },
+    {
+      "index": 296,
+      "prediction": "Khô, là bị dụng nhà sinh lớ@@",
+      "ground_truth": "Nhà vệ sinh bị dỡ bỏ",
+      "normalized_prediction": "khô bị dụng nhà sinh lớ@@",
+      "normalized_ground_truth": "nhà vệ sinh bị dỡ bỏ"
+    },
+    {
+      "index": 297,
+      "prediction": "Kệ tính tay nằm bàn việc trên sách việ@@",
+      "ground_truth": "Laptop được bao quanh bởi sách",
+      "normalized_prediction": "kệ tính tay nằm bàn việc trên sách việ@@",
+      "normalized_ground_truth": "laptop bao quanh bởi sách"
+    },
+    {
+      "index": 298,
+      "prediction": "Hai chiếc x, chiếc bá, nhiều vật",
+      "ground_truth": "Một cái laptop",
+      "normalized_prediction": "hai chiếc x chiếc bá nhiều vật",
+      "normalized_ground_truth": "cái laptop"
+    },
+    {
+      "index": 299,
+      "prediction": "Đĩa cà nằm đĩa đặt đĩa ăn trên ăn",
+      "ground_truth": "Chúng nằm trên đĩa",
+      "normalized_prediction": "đĩa cà nằm đĩa đặt đĩa ăn trên ăn",
+      "normalized_ground_truth": "chúng nằm trên đĩa"
+    },
+    {
+      "index": 300,
+      "prediction": "Lò ưở, ế, rửa nhà sinhlò",
+      "ground_truth": "Nằm cạnh quầy",
+      "normalized_prediction": "lò ưở ế rửa nhà sinhlò",
+      "normalized_ground_truth": "nằm cạnh quầy"
+    },
+    {
+      "index": 301,
+      "prediction": "Hai chiếc x, chiếc chiếc giường chiếc",
+      "ground_truth": "Hai chiếc",
+      "normalized_prediction": "hai chiếc x chiếc chiếc giường chiếc",
+      "normalized_ground_truth": "hai chiếc"
+    },
+    {
+      "index": 302,
+      "prediction": "Thtay dùng cắt uố, cà t.",
+      "ground_truth": "Cắt bánh",
+      "normalized_prediction": "thtay dùng cắt uố cà t",
+      "normalized_ground_truth": "cắt bánh"
+    },
+    {
+      "index": 303,
+      "prediction": "Hai bát ăn ba thức , nhiều thức n.",
+      "ground_truth": "Hai hộp",
+      "normalized_prediction": "hai bát ăn ba thức nhiều thức n",
+      "normalized_ground_truth": "hai hộp"
+    },
+    {
+      "index": 304,
+      "prediction": "Cà uố, ocà acà và uố@@",
+      "ground_truth": "Táo và chuối",
+      "normalized_prediction": "cà uố ocà acà uố@@",
+      "normalized_ground_truth": "táo chuối"
+    },
+    {
+      "index": 305,
+      "prediction": "Đồng lớ, cà và hồ trên đồng .",
+      "ground_truth": "Thiếu một bàn tay",
+      "normalized_prediction": "đồng lớ cà hồ trên đồng",
+      "normalized_ground_truth": "thiếu bàn tay"
+    },
+    {
+      "index": 306,
+      "prediction": "Đngđen trắng trắ, và xanh cây",
+      "ground_truth": "Xanh, vàng và xanh lá cây",
+      "normalized_prediction": "đngđen trắng trắ xanh cây",
+      "normalized_ground_truth": "xanh vàng xanh lá cây"
+    },
+    {
+      "index": 307,
+      "prediction": "TV giường giường ghế giường một trong trong ngủ tủ giường phòng",
+      "ground_truth": "Đặt gần nhau",
+      "normalized_prediction": "tv giường giường ghế giường ngủ tủ giường phòng",
+      "normalized_ground_truth": "đặt gần nhau"
+    },
+    {
+      "index": 308,
+      "prediction": "Bánh x, bá, uố, và rán",
+      "ground_truth": "Bánh rán phủ đường bột",
+      "normalized_prediction": "bánh x bá uố rán",
+      "normalized_ground_truth": "bánh rán phủ đường bột"
+    },
+    {
+      "index": 309,
+      "prediction": "Màu trắ, xanh cây trắng xanh trắ@@",
+      "ground_truth": "Hoa cam vàng trong bình trắng",
+      "normalized_prediction": "màu trắ xanh cây trắng xanh trắ@@",
+      "normalized_ground_truth": "hoa cam vàng bình trắng"
+    },
+    {
+      "index": 310,
+      "prediction": "TV so, và là phần nội của sá@@",
+      "ground_truth": "Thay đổi theo thời gian.",
+      "normalized_prediction": "tv so phần nội sá@@",
+      "normalized_ground_truth": "thay đổi theo thời gian"
+    },
+    {
+      "index": 311,
+      "prediction": "Hai phụ và con bông ba phụ phụ khác",
+      "ground_truth": "Hai chú gấu bông",
+      "normalized_prediction": "hai phụ con bông ba phụ phụ khác",
+      "normalized_ground_truth": "hai chú gấu bông"
+    },
+    {
+      "index": 312,
+      "prediction": "Bên tònhà đá đá bên bức đá",
+      "ground_truth": "Ngồi cạnh",
+      "normalized_prediction": "bên tònhà đá đá bên bức đá",
+      "normalized_ground_truth": "ngồi cạnh"
+    },
+    {
+      "index": 313,
+      "prediction": "Bánh uố, tây là thành của sáng sáng bánh",
+      "ground_truth": "Cả hai đều là trái cây",
+      "normalized_prediction": "bánh uố tây thành sáng sáng bánh",
+      "normalized_ground_truth": "cả hai đều trái cây"
+    },
+    {
+      "index": 314,
+      "prediction": "Ly rượu rượu uống ly uống từ bàn phê",
+      "ground_truth": "Ly rượu đặt trên bàn",
+      "normalized_prediction": "ly rượu rượu uống ly uống từ bàn phê",
+      "normalized_ground_truth": "ly rượu đặt trên bàn"
+    },
+    {
+      "index": 315,
+      "prediction": "Màu trắ, ngđen trắng trắng xanh trắ@@",
+      "ground_truth": "Màu trắng.",
+      "normalized_prediction": "màu trắ ngđen trắng trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 316,
+      "prediction": "Khô, có là bị ế, ế@@",
+      "ground_truth": "Có, rất sạch sẽ",
+      "normalized_prediction": "khô có bị ế ế@@",
+      "normalized_ground_truth": "có rất sạch sẽ"
+    },
+    {
+      "index": 317,
+      "prediction": "Tá, uố, ocam cam cà",
+      "ground_truth": "Nho, cam, kiwi và táo",
+      "normalized_prediction": "tá uố ocam cam cà",
+      "normalized_ground_truth": "nho cam kiwi táo"
+    },
+    {
+      "index": 318,
+      "prediction": "Hai thiết thiết ngoại , thiết điện thiết nhiều bị",
+      "ground_truth": "Hai thiết bị",
+      "normalized_prediction": "hai thiết thiết ngoại thiết điện thiết nhiều bị",
+      "normalized_ground_truth": "hai thiết bị"
+    },
+    {
+      "index": 319,
+      "prediction": "Lò nướng nướng lò ưở, nướng trong nướng bếp",
+      "ground_truth": "Đặt cạnh nhau",
+      "normalized_prediction": "lò nướng nướng lò ưở nướng nướng bếp",
+      "normalized_ground_truth": "đặt cạnh nhau"
+    },
+    {
+      "index": 320,
+      "prediction": "Hai chiếc hồ tònhà giờ chiếc chiếc",
+      "ground_truth": "Ba chiếc",
+      "normalized_prediction": "hai chiếc hồ tònhà giờ chiếc chiếc",
+      "normalized_ground_truth": "ba chiếc"
+    },
+    {
+      "index": 321,
+      "prediction": "Đngtrắng trắ, ngđen trắ@@",
+      "ground_truth": "Màu đỏ",
+      "normalized_prediction": "đngtrắng trắ ngđen trắ@@",
+      "normalized_ground_truth": "màu đỏ"
+    },
+    {
+      "index": 322,
+      "prediction": "Đĩa đĩa ăn nnằm bàn phê trắng",
+      "ground_truth": "Bánh sandwich nằm trên đĩa.",
+      "normalized_prediction": "đĩa đĩa ăn nnằm bàn phê trắng",
+      "normalized_ground_truth": "bánh sandwich nằm trên đĩa"
+    },
+    {
+      "index": 323,
+      "prediction": "Bên bàn việc bên cạnh tính tay bàn m.",
+      "ground_truth": "Ngồi trước máy tính",
+      "normalized_prediction": "bên bàn việc bên cạnh tính tay bàn m",
+      "normalized_ground_truth": "ngồi trước máy tính"
+    },
+    {
+      "index": 324,
+      "prediction": "Bên tònhà sinh ngoài sổcạnh sổbàn phê",
+      "ground_truth": "Trên bậu cửa sổ",
+      "normalized_prediction": "bên tònhà sinh ngoài sổcạnh sổbàn phê",
+      "normalized_ground_truth": "trên bậu cửa sổ"
+    },
+    {
+      "index": 325,
+      "prediction": "Hai nhiều khác , ba thức và cái .",
+      "ground_truth": "Ba nồi",
+      "normalized_prediction": "hai nhiều khác ba thức cái",
+      "normalized_ground_truth": "ba nồi"
+    },
+    {
+      "index": 326,
+      "prediction": "Cả đồ thất đồ được trong trong phòng m.",
+      "ground_truth": "Đồ lót nằm trên vali",
+      "normalized_prediction": "cả đồ thất đồ phòng m",
+      "normalized_ground_truth": "đồ lót nằm trên vali"
+    },
+    {
+      "index": 327,
+      "prediction": "Bên tònhà xe đậu ngoài a gạch",
+      "ground_truth": "Trong một tòa nhà",
+      "normalized_prediction": "bên tònhà xe đậu ngoài a gạch",
+      "normalized_ground_truth": "tòa nhà"
+    },
+    {
+      "index": 328,
+      "prediction": "Cà ach, chu, cải anhcà",
+      "ground_truth": "Thịt gà và bông cải xanh",
+      "normalized_prediction": "cà ach chu cải anhcà",
+      "normalized_ground_truth": "thịt gà bông cải xanh"
+    },
+    {
+      "index": 329,
+      "prediction": "Đngđen trắng trắ, xanh cây trắng trắng",
+      "ground_truth": "Đĩa màu trắng",
+      "normalized_prediction": "đngđen trắng trắ xanh cây trắng trắng",
+      "normalized_ground_truth": "đĩa màu trắng"
+    },
+    {
+      "index": 330,
+      "prediction": "Ghế bàn việc bàn bàn phê bàn việ@@",
+      "ground_truth": "Bàn làm việc",
+      "normalized_prediction": "ghế bàn việc bàn bàn phê bàn việ@@",
+      "normalized_ground_truth": "bàn làm việc"
+    },
+    {
+      "index": 331,
+      "prediction": "Bông x, chu, cải anhcà",
+      "ground_truth": "Hành tây đỏ, bông cải xanh",
+      "normalized_prediction": "bông x chu cải anhcà",
+      "normalized_ground_truth": "hành tây đỏ bông cải xanh"
+    },
+    {
+      "index": 332,
+      "prediction": "Bồn rử, vệ , rửa nhà sinhbồn",
+      "ground_truth": "Một chiếc khăn màu xanh",
+      "normalized_prediction": "bồn rử vệ rửa nhà sinhbồn",
+      "normalized_ground_truth": "chiếc khăn màu xanh"
+    },
+    {
+      "index": 333,
+      "prediction": "Hai loạ, loại thức và loại ăn",
+      "ground_truth": "Hai loại",
+      "normalized_prediction": "hai loạ loại thức loại ăn",
+      "normalized_ground_truth": "hai loại"
+    },
+    {
+      "index": 334,
+      "prediction": "Hai rửa nhà sinh , vệ , cái bồn",
+      "ground_truth": "Hai bồn rửa và hai gương",
+      "normalized_prediction": "hai rửa nhà sinh vệ cái bồn",
+      "normalized_ground_truth": "hai bồn rửa hai gương"
+    },
+    {
+      "index": 335,
+      "prediction": "TV sổ tắm cửa , sổ và sổ sổ ngủ giường giường phòng",
+      "ground_truth": "Cánh cửa dẫn vào phòng tắm",
+      "normalized_prediction": "tv sổ tắm cửa sổ sổ sổ ngủ giường giường phòng",
+      "normalized_ground_truth": "cánh cửa dẫn vào phòng tắm"
+    },
+    {
+      "index": 336,
+      "prediction": "Đ, x, và tính tay bàn m.",
+      "ground_truth": "Sơ đồ bàn phím máy tính",
+      "normalized_prediction": "đ x tính tay bàn m",
+      "normalized_ground_truth": "sơ đồ bàn phím máy tính"
+    },
+    {
+      "index": 337,
+      "prediction": "Gương sổ sổ sáng sáng ánh chiếu cửa sổ tắm",
+      "ground_truth": "Phòng tắm được chiếu sáng",
+      "normalized_prediction": "gương sổ sổ sáng sáng ánh chiếu cửa sổ tắm",
+      "normalized_ground_truth": "phòng tắm chiếu sáng"
+    },
+    {
+      "index": 338,
+      "prediction": "Gương chải chải răng trên rửa đặt bàn việ@@",
+      "ground_truth": "Chúng được đặt cạnh nhau",
+      "normalized_prediction": "gương chải chải răng trên rửa đặt bàn việ@@",
+      "normalized_ground_truth": "chúng đặt cạnh nhau"
+    },
+    {
+      "index": 339,
+      "prediction": "Hai máy xách xách và tính tay học học",
+      "ground_truth": "Hai màn hình",
+      "normalized_prediction": "hai máy xách xách tính tay học học",
+      "normalized_ground_truth": "hai màn hình"
+    },
+    {
+      "index": 340,
+      "prediction": "Tháp hồ m, hồ và vệ xanh cây",
+      "ground_truth": "Biểu tượng Olympic",
+      "normalized_prediction": "tháp hồ m hồ vệ xanh cây",
+      "normalized_ground_truth": "biểu tượng olympic"
+    },
+    {
+      "index": 341,
+      "prediction": "Bánh pper, tây và mì chng.",
+      "ground_truth": "Không rõ từ thông tin.",
+      "normalized_prediction": "bánh pper tây mì chng",
+      "normalized_ground_truth": "không rõ từ thông tin"
+    },
+    {
+      "index": 342,
+      "prediction": "Bên một ghế bàn bên tònhà ngoài sổ",
+      "ground_truth": "Trên thảm màu be",
+      "normalized_prediction": "bên ghế bàn bên tònhà ngoài sổ",
+      "normalized_ground_truth": "trên thảm màu be"
+    },
+    {
+      "index": 343,
+      "prediction": "Máy xách và tính tay máy xách xách",
+      "ground_truth": "Một con chim",
+      "normalized_prediction": "máy xách tính tay máy xách xách",
+      "normalized_ground_truth": "con chim"
+    },
+    {
+      "index": 344,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu sô cô la",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu sô cô la"
+    },
+    {
+      "index": 345,
+      "prediction": "Lò ưở, ế, vệ , vi , tắm",
+      "ground_truth": "Phong cách bãi biển nhẹ nhàng",
+      "normalized_prediction": "lò ưở ế vệ vi tắm",
+      "normalized_ground_truth": "phong cách bãi biển nhẹ nhàng"
+    },
+    {
+      "index": 346,
+      "prediction": "Bên bàn việc bóng của tính tay quả ng.",
+      "ground_truth": "Ở giữa nắp",
+      "normalized_prediction": "bên bàn việc bóng tính tay quả ng",
+      "normalized_ground_truth": "ở giữa nắp"
+    },
+    {
+      "index": 347,
+      "prediction": "Bánh cà là phần bữa đầy của sáng sáng",
+      "ground_truth": "Chúng nằm cạnh nhau trên bàn",
+      "normalized_prediction": "bánh cà phần bữa đầy sáng sáng",
+      "normalized_ground_truth": "chúng nằm cạnh nhau trên bàn"
+    },
+    {
+      "index": 348,
+      "prediction": "Bánh uố, obánh và rửa ch.",
+      "ground_truth": "Hộp kính",
+      "normalized_prediction": "bánh uố obánh rửa ch",
+      "normalized_ground_truth": "hộp kính"
+    },
+    {
+      "index": 349,
+      "prediction": "Bông x, cải là thành của bữa đầy",
+      "ground_truth": "Thịt và bông cải xanh cùng trên đĩa",
+      "normalized_prediction": "bông x cải thành bữa đầy",
+      "normalized_ground_truth": "thịt bông cải xanh cùng trên đĩa"
+    },
+    {
+      "index": 350,
+      "prediction": "Gương rửa trắ, vệ , rửa trắng đen trắng trắng xám trắng xanh trắng nâu trắng trắ@@",
+      "ground_truth": "Gạch trắng và xanh dương tương phản với thiết bị trắng",
+      "normalized_prediction": "gương rửa trắ vệ rửa trắng đen trắng trắng xám trắng xanh trắng nâu trắng trắ@@",
+      "normalized_ground_truth": "gạch trắng xanh dương tương phản thiết bị trắng"
+    },
+    {
+      "index": 351,
+      "prediction": "Hai chiếc x, chiếc chiếc và chiếc giường giường",
+      "ground_truth": "Bốn chiếc",
+      "normalized_prediction": "hai chiếc x chiếc chiếc chiếc giường giường",
+      "normalized_ground_truth": "bốn chiếc"
+    },
+    {
+      "index": 352,
+      "prediction": "Màu trắ, ngđen trắng xanh cây trắng trắng",
+      "ground_truth": "Màu đỏ",
+      "normalized_prediction": "màu trắ ngđen trắng xanh cây trắng trắng",
+      "normalized_ground_truth": "màu đỏ"
+    },
+    {
+      "index": 353,
+      "prediction": "Bên bàn việc phía bàn bên bàn việ@@",
+      "ground_truth": "Trên đầu những cuốn sách cũ",
+      "normalized_prediction": "bên bàn việc phía bàn bên bàn việ@@",
+      "normalized_ground_truth": "trên đầu những cuốn sách cũ"
+    },
+    {
+      "index": 354,
+      "prediction": "Cà ochicà và uố, tây",
+      "ground_truth": "Táo và dâu tây",
+      "normalized_prediction": "cà ochicà uố tây",
+      "normalized_ground_truth": "táo dâu tây"
+    },
+    {
+      "index": 355,
+      "prediction": "TV ối giường giường ghế giường TV TV giường ngủ giường chiếu giường diện giường TVgiường trải giường đèn giường tivi giường sofa giường nội giường phòng giường trên",
+      "ground_truth": "TV gắn trên tường, đối diện giường",
+      "normalized_prediction": "tv ối giường giường ghế giường tv tv giường ngủ giường chiếu giường diện giường tvgiường trải giường đèn giường tivi giường sofa giường nội giường phòng giường trên",
+      "normalized_ground_truth": "tv gắn trên tường đối diện giường"
+    },
+    {
+      "index": 356,
+      "prediction": "Lò ưở, nướng nướng ở lò ưở@@",
+      "ground_truth": "Vỉ nướng nằm trên gạch",
+      "normalized_prediction": "lò ưở nướng nướng ở lò ưở@@",
+      "normalized_ground_truth": "vỉ nướng nằm trên gạch"
+    },
+    {
+      "index": 357,
+      "prediction": "Bát quả đang trên uố, quả ở bàn",
+      "ground_truth": "Chúng cùng nằm trên quầy",
+      "normalized_prediction": "bát quả đang trên uố quả ở bàn",
+      "normalized_ground_truth": "chúng cùng nằm trên quầy"
+    },
+    {
+      "index": 358,
+      "prediction": "Hoa uố, hoa được quanh bởi cây héo",
+      "ground_truth": "Hoa và lá cùng trong bình",
+      "normalized_prediction": "hoa uố hoa quanh bởi cây héo",
+      "normalized_ground_truth": "hoa lá cùng bình"
+    },
+    {
+      "index": 359,
+      "prediction": "Chiếc tải tải cứu a đang trong đậu xe",
+      "ground_truth": "Chúng ở gần nhau",
+      "normalized_prediction": "chiếc tải tải cứu a đang đậu xe",
+      "normalized_ground_truth": "chúng ở gần nhau"
+    },
+    {
+      "index": 360,
+      "prediction": "Bình uố, hoa được quanh trong bồn a.",
+      "ground_truth": "Ấm trà đặt cạnh hoa tươi",
+      "normalized_prediction": "bình uố hoa quanh bồn a",
+      "normalized_ground_truth": "ấm trà đặt cạnh hoa tươi"
+    },
+    {
+      "index": 361,
+      "prediction": "Bông x, tâ, cải anhcà",
+      "ground_truth": "Bông cải xanh",
+      "normalized_prediction": "bông x tâ cải anhcà",
+      "normalized_ground_truth": "bông cải xanh"
+    },
+    {
+      "index": 362,
+      "prediction": "Bồn rử, vệ , rửa và vệ",
+      "ground_truth": "Bàn chải đánh răng và kem đánh răng",
+      "normalized_prediction": "bồn rử vệ rửa vệ",
+      "normalized_ground_truth": "bàn chải đánh răng kem đánh răng"
+    },
+    {
+      "index": 363,
+      "prediction": "Gương trắng trắ, xanh trắng trắng xanh trắ@@",
+      "ground_truth": "Rèm tắm có màu xanh dương",
+      "normalized_prediction": "gương trắng trắ xanh trắng trắng xanh trắ@@",
+      "normalized_ground_truth": "rèm tắm có màu xanh dương"
+    },
+    {
+      "index": 364,
+      "prediction": "Hai tính máy xách và tính thiết ngoại",
+      "ground_truth": "Hai",
+      "normalized_prediction": "hai tính máy xách tính thiết ngoại",
+      "normalized_ground_truth": "hai"
+    },
+    {
+      "index": 365,
+      "prediction": "Bánh uố, rán được bày trên sáng sáng",
+      "ground_truth": "Nến bao quanh bánh",
+      "normalized_prediction": "bánh uố rán bày trên sáng sáng",
+      "normalized_ground_truth": "nến bao quanh bánh"
+    },
+    {
+      "index": 366,
+      "prediction": "Màu trắ, nâ, trắng đen trắng trắng nâu",
+      "ground_truth": "Màu vàng",
+      "normalized_prediction": "màu trắ nâ trắng đen trắng trắng nâu",
+      "normalized_ground_truth": "màu vàng"
+    },
+    {
+      "index": 367,
+      "prediction": "Lò ưở, vi , nướng nướng lò sóng",
+      "ground_truth": "Tủ lạnh",
+      "normalized_prediction": "lò ưở vi nướng nướng lò sóng",
+      "normalized_ground_truth": "tủ lạnh"
+    },
+    {
+      "index": 368,
+      "prediction": "Bên tònhà sinh cạnh vệ bồn a. bàn tắm",
+      "ground_truth": "Bồn rửa nằm cạnh bồn cầu.",
+      "normalized_prediction": "bên tònhà sinh cạnh vệ bồn a bàn tắm",
+      "normalized_ground_truth": "bồn rửa nằm cạnh bồn cầu"
+    },
+    {
+      "index": 369,
+      "prediction": "Đĩa tính tay bàn việc dụng làm việ@@",
+      "ground_truth": "Một cuốn sách",
+      "normalized_prediction": "đĩa tính tay bàn việc dụng làm việ@@",
+      "normalized_ground_truth": "cuốn sách"
+    },
+    {
+      "index": 370,
+      "prediction": "Khăn x, vệ , cà và vệ giường giường",
+      "ground_truth": "Chiếc giường",
+      "normalized_prediction": "khăn x vệ cà vệ giường giường",
+      "normalized_ground_truth": "chiếc giường"
+    },
+    {
+      "index": 371,
+      "prediction": "Bánh rán rán bánh đặt đĩa ăn trên",
+      "ground_truth": "Bánh cupcake đặt trên đĩa",
+      "normalized_prediction": "bánh rán rán bánh đặt đĩa ăn trên",
+      "normalized_ground_truth": "bánh cupcake đặt trên đĩa"
+    },
+    {
+      "index": 372,
+      "prediction": "Bồn rử, vệ , rửa và vệ trắng tắm",
+      "ground_truth": "Bồn tắm kiểu xoáy nước lớn",
+      "normalized_prediction": "bồn rử vệ rửa vệ trắng tắm",
+      "normalized_ground_truth": "bồn tắm kiểu xoáy nước lớn"
+    },
+    {
+      "index": 373,
+      "prediction": "Vngng, vệ , rửa và vệ",
+      "ground_truth": "Nhỏ gọn và đầy đủ",
+      "normalized_prediction": "vngng vệ rửa vệ",
+      "normalized_ground_truth": "nhỏ gọn đầy đủ"
+    },
+    {
+      "index": 374,
+      "prediction": "Đĩa tính tay bàn việc thiết điện bàn học học",
+      "ground_truth": "Máy tính để bàn",
+      "normalized_prediction": "đĩa tính tay bàn việc thiết điện bàn học học",
+      "normalized_ground_truth": "máy tính bàn"
+    },
+    {
+      "index": 375,
+      "prediction": "Bông x, cải là thành của bữa đầy",
+      "ground_truth": "Chúng ở cạnh nhau",
+      "normalized_prediction": "bông x cải thành bữa đầy",
+      "normalized_ground_truth": "chúng ở cạnh nhau"
+    },
+    {
+      "index": 376,
+      "prediction": "Lò ưở, so, , nội và đồ thất",
+      "ground_truth": "Sạch sẽ và sáng sủa",
+      "normalized_prediction": "lò ưở so nội đồ thất",
+      "normalized_ground_truth": "sạch sẽ sáng sủa"
+    },
+    {
+      "index": 377,
+      "prediction": "TV đồ thất được bày sàn trong ngủ ghế ghế giường giường ghế bàn phê bàn việc ghế TV TV tivi TV giường phòng ưở@@",
+      "ground_truth": "Thảm ở giữa đồ đạc",
+      "normalized_prediction": "tv đồ thất bày sàn ngủ ghế ghế giường giường ghế bàn phê bàn việc ghế tv tv tivi tv giường phòng ưở@@",
+      "normalized_ground_truth": "thảm ở giữa đồ đạc"
+    },
+    {
+      "index": 378,
+      "prediction": "Lò ưở, tính tay bàn việc bàn học",
+      "ground_truth": "Bàn phím, màn hình, tai nghe và loa",
+      "normalized_prediction": "lò ưở tính tay bàn việc bàn học",
+      "normalized_ground_truth": "bàn phím màn hình tai nghe loa"
+    },
+    {
+      "index": 379,
+      "prediction": "Sàn trải , xanh , ng, và xanh cây",
+      "ground_truth": "Sàn gỗ cứng",
+      "normalized_prediction": "sàn trải xanh ng xanh cây",
+      "normalized_ground_truth": "sàn gỗ cứng"
+    },
+    {
+      "index": 380,
+      "prediction": "Bông x, cải anhcà và uố@@",
+      "ground_truth": "Một cái muỗng",
+      "normalized_prediction": "bông x cải anhcà uố@@",
+      "normalized_ground_truth": "cái muỗng"
+    },
+    {
+      "index": 381,
+      "prediction": "Lò ưở, vi , nướng và rửa trắng trắng",
+      "ground_truth": "Tạo nên phong cách nội thất",
+      "normalized_prediction": "lò ưở vi nướng rửa trắng trắng",
+      "normalized_ground_truth": "tạo nên phong cách nội thất"
+    },
+    {
+      "index": 382,
+      "prediction": "Hai đĩ, đĩa ăn ăn đĩa sá@@",
+      "ground_truth": "Bốn đĩa đầy thức ăn",
+      "normalized_prediction": "hai đĩ đĩa ăn ăn đĩa sá@@",
+      "normalized_ground_truth": "bốn đĩa đầy thức ăn"
+    },
+    {
+      "index": 383,
+      "prediction": "Người ông đang dụng điều máy xách a.",
+      "ground_truth": "Người đàn ông xuất hiện trên ti vi",
+      "normalized_prediction": "người ông đang dụng điều máy xách a",
+      "normalized_ground_truth": "người đàn ông xuất hiện trên ti vi"
+    },
+    {
+      "index": 384,
+      "prediction": "TV dài ghế ghế giường giường ghế diện ghế ghếgiường ngủ ghế bàn phê ghế , ghế sofa ghế TV ghế faghế và ghế đều đồ thất trong",
+      "ground_truth": "Chúng là một phần của khu vực tiếp khách",
+      "normalized_prediction": "tv dài ghế ghế giường giường ghế diện ghế ghếgiường ngủ ghế bàn phê ghế ghế sofa ghế tv ghế faghế ghế đều đồ thất",
+      "normalized_ground_truth": "chúng phần khu vực tiếp khách"
+    },
+    {
+      "index": 385,
+      "prediction": "Máy xách và tính tay máy xách xách",
+      "ground_truth": "Vỏ iPod",
+      "normalized_prediction": "máy xách tính tay máy xách xách",
+      "normalized_ground_truth": "vỏ ipod"
+    },
+    {
+      "index": 386,
+      "prediction": "Bồn vệ , vệ và vệ nhà sinhbồn",
+      "ground_truth": "Gỗ",
+      "normalized_prediction": "bồn vệ vệ vệ nhà sinhbồn",
+      "normalized_ground_truth": "gỗ"
+    },
+    {
+      "index": 387,
+      "prediction": "Hai tính tính thiết ngoại của tính máy xách",
+      "ground_truth": "Hai",
+      "normalized_prediction": "hai tính tính thiết ngoại tính máy xách",
+      "normalized_ground_truth": "hai"
+    },
+    {
+      "index": 388,
+      "prediction": "Bên trái lớ, trái và quả lớn",
+      "ground_truth": "Nằm ở trung tâm",
+      "normalized_prediction": "bên trái lớ trái quả lớn",
+      "normalized_ground_truth": "nằm ở trung tâm"
+    },
+    {
+      "index": 389,
+      "prediction": "Lò ưở, vi , rửa và rửa trắng",
+      "ground_truth": "Rất nhiều thức ăn",
+      "normalized_prediction": "lò ưở vi rửa rửa trắng",
+      "normalized_ground_truth": "rất nhiều thức ăn"
+    },
+    {
+      "index": 390,
+      "prediction": "Bông x, rốt cà acà và tây",
+      "ground_truth": "Cá hồi, gạo, đậu, bông cải xanh",
+      "normalized_prediction": "bông x rốt cà acà tây",
+      "normalized_ground_truth": "cá hồi gạo đậu bông cải xanh"
+    },
+    {
+      "index": 391,
+      "prediction": "Vx, vệ và vệ của vệ nh.",
+      "ground_truth": "Sàn gỗ",
+      "normalized_prediction": "vx vệ vệ vệ nh",
+      "normalized_ground_truth": "sàn gỗ"
+    },
+    {
+      "index": 392,
+      "prediction": "TV so, ưở, giường giường tivi bàn phê",
+      "ground_truth": "Nằm trên quầy",
+      "normalized_prediction": "tv so ưở giường giường tivi bàn phê",
+      "normalized_ground_truth": "nằm trên quầy"
+    },
+    {
+      "index": 393,
+      "prediction": "Màu trắ, xanh cây trắng xanh trắ@@",
+      "ground_truth": "Màu đỏ và trắng làm nổi bật thông điệp",
+      "normalized_prediction": "màu trắ xanh cây trắng xanh trắ@@",
+      "normalized_ground_truth": "màu đỏ trắng làm nổi bật thông điệp"
+    },
+    {
+      "index": 394,
+      "prediction": "Con bông xanh cà đang trên trên giấy n.",
+      "ground_truth": "Thú nhồi bông trong cũi trên tờ giấy",
+      "normalized_prediction": "con bông xanh cà đang trên trên giấy n",
+      "normalized_ground_truth": "thú nhồi bông cũi trên tờ giấy"
+    },
+    {
+      "index": 395,
+      "prediction": "Lò ưở, vệ , hồ alò ưở@@",
+      "ground_truth": "Cành cây thường xanh, đèn, cung tên",
+      "normalized_prediction": "lò ưở vệ hồ alò ưở@@",
+      "normalized_ground_truth": "cành cây thường xanh đèn cung tên"
+    },
+    {
+      "index": 396,
+      "prediction": "Bên một bàn phê và ghế bàn việ@@",
+      "ground_truth": "Trên ghế",
+      "normalized_prediction": "bên bàn phê ghế bàn việ@@",
+      "normalized_ground_truth": "trên ghế"
+    },
+    {
+      "index": 397,
+      "prediction": "Gương vệ đều thiết là bị trang của vệ nh.",
+      "ground_truth": "Các bức ảnh trang trí phòng tắm",
+      "normalized_prediction": "gương vệ đều thiết bị trang vệ nh",
+      "normalized_ground_truth": "bức ảnh trang trí phòng tắm"
+    },
+    {
+      "index": 398,
+      "prediction": "Bên một phố ngoài vực của a xe tô nước",
+      "ground_truth": "Trong căn phòng",
+      "normalized_prediction": "bên phố ngoài vực a xe tô nước",
+      "normalized_ground_truth": "căn phòng"
+    },
+    {
+      "index": 399,
+      "prediction": "Hai chiếc x, chiếc màu và chiếc rán",
+      "ground_truth": "Ba chiếc",
+      "normalized_prediction": "hai chiếc x chiếc màu chiếc rán",
+      "normalized_ground_truth": "ba chiếc"
+    },
+    {
+      "index": 400,
+      "prediction": "Cà acà akhoai ycà và tây",
+      "ground_truth": "Cà chua, cà rốt và chanh",
+      "normalized_prediction": "cà acà akhoai ycà tây",
+      "normalized_ground_truth": "cà chua cà rốt chanh"
+    },
+    {
+      "index": 401,
+      "prediction": "Hai ba bị vi , thiết thiết ba .",
+      "ground_truth": "Một vài",
+      "normalized_prediction": "hai ba bị vi thiết thiết ba",
+      "normalized_ground_truth": "một vài"
+    },
+    {
+      "index": 402,
+      "prediction": "Khô, là phần bữa đầy sá.",
+      "ground_truth": "Bữa ăn còn nóng hổi",
+      "normalized_prediction": "khô phần bữa đầy sá",
+      "normalized_ground_truth": "bữa ăn còn nóng hổi"
+    },
+    {
+      "index": 403,
+      "prediction": "Cây ưở, so, , và có sáng trắng",
+      "ground_truth": "Được trang trí lớn",
+      "normalized_prediction": "cây ưở so có sáng trắng",
+      "normalized_ground_truth": "trang trí lớn"
+    },
+    {
+      "index": 404,
+      "prediction": "Bàn tính tay đang bộ máy bàn việc bàn phê",
+      "ground_truth": "Ngồi cạnh nhau",
+      "normalized_prediction": "bàn tính tay đang bộ máy bàn việc bàn phê",
+      "normalized_ground_truth": "ngồi cạnh nhau"
+    },
+    {
+      "index": 405,
+      "prediction": "Bàn phím bàn việc bàn đang trên làm bàn việ@@",
+      "ground_truth": "Sổ ghi chép nằm phía trên bàn phím",
+      "normalized_prediction": "bàn phím bàn việc bàn đang trên làm bàn việ@@",
+      "normalized_ground_truth": "sổ ghi chép nằm phía trên bàn phím"
+    },
+    {
+      "index": 406,
+      "prediction": "Người ăn ăn sinh là phần bữa cho ăn",
+      "ground_truth": "Thức ăn là trung tâm của buổi tiệc",
+      "normalized_prediction": "người ăn ăn sinh phần bữa cho ăn",
+      "normalized_ground_truth": "thức ăn trung tâm buổi tiệc"
+    },
+    {
+      "index": 407,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Đen và trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "đen trắng"
+    },
+    {
+      "index": 408,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 409,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu gỗ tự nhiên",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu gỗ tự nhiên"
+    },
+    {
+      "index": 410,
+      "prediction": "Ghế dài dài ghế ghế nằm cửa cửa sổ ngủ ghế",
+      "ground_truth": "Ghế ở cạnh cửa sổ",
+      "normalized_prediction": "ghế dài dài ghế ghế nằm cửa cửa sổ ngủ ghế",
+      "normalized_ground_truth": "ghế ở cạnh cửa sổ"
+    },
+    {
+      "index": 411,
+      "prediction": "Bánh x, cà acà và tây",
+      "ground_truth": "Xúc xích, khoai tây, bánh mì nướng",
+      "normalized_prediction": "bánh x cà acà tây",
+      "normalized_ground_truth": "xúc xích khoai tây bánh mì nướng"
+    },
+    {
+      "index": 412,
+      "prediction": "Bên bàn phê phê và trên làm của ghế bàn việc bàn việ@@",
+      "ground_truth": "Cạnh ghế đu và trên sàn nhà",
+      "normalized_prediction": "bên bàn phê phê trên làm ghế bàn việc bàn việ@@",
+      "normalized_ground_truth": "cạnh ghế đu trên sàn nhà"
+    },
+    {
+      "index": 413,
+      "prediction": "Bên một bàn bên lò ưở, bàn việc ngoài",
+      "ground_truth": "Trên quầy gỗ",
+      "normalized_prediction": "bên bàn bên lò ưở bàn việc ngoài",
+      "normalized_ground_truth": "trên quầy gỗ"
+    },
+    {
+      "index": 414,
+      "prediction": "Bánh cà là phần bữa của ch. mì",
+      "ground_truth": "Nước sốt ở trong bánh",
+      "normalized_prediction": "bánh cà phần bữa ch mì",
+      "normalized_ground_truth": "nước sốt ở bánh"
+    },
+    {
+      "index": 415,
+      "prediction": "Hai chiếc x, chiếc nhiều khác chiếc rán",
+      "ground_truth": "Ba chiếc bánh rán",
+      "normalized_prediction": "hai chiếc x chiếc nhiều khác chiếc rán",
+      "normalized_ground_truth": "ba chiếc bánh rán"
+    },
+    {
+      "index": 416,
+      "prediction": "Chiếc x, uố, vệ , cà",
+      "ground_truth": "Một con tàu",
+      "normalized_prediction": "chiếc x uố vệ cà",
+      "normalized_ground_truth": "con tàu"
+    },
+    {
+      "index": 417,
+      "prediction": "Cà uố, rốt cà được quanh bởi",
+      "ground_truth": "Mứt cam đi kèm trái cây",
+      "normalized_prediction": "cà uố rốt cà quanh bởi",
+      "normalized_ground_truth": "mứt cam đi kèm trái cây"
+    },
+    {
+      "index": 418,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 419,
+      "prediction": "Gương đèn sáng chiếu giường chiếu chiếu chiếc dài trắng",
+      "ground_truth": "Gương đặt cạnh giường.",
+      "normalized_prediction": "gương đèn sáng chiếu giường chiếu chiếu chiếc dài trắng",
+      "normalized_ground_truth": "gương đặt cạnh giường"
+    },
+    {
+      "index": 420,
+      "prediction": "Trên bàn việc ngoài của làm bên trong sổ@@",
+      "ground_truth": "Trên quầy",
+      "normalized_prediction": "trên bàn việc ngoài làm bên sổ@@",
+      "normalized_ground_truth": "trên quầy"
+    },
+    {
+      "index": 421,
+      "prediction": "Sợi thoại thoại gắn với thoại trên vi",
+      "ground_truth": "Điện thoại ở trong túi",
+      "normalized_prediction": "sợi thoại thoại gắn thoại trên vi",
+      "normalized_ground_truth": "điện thoại ở túi"
+    },
+    {
+      "index": 422,
+      "prediction": "Cócó là bá, có đã bá@@",
+      "ground_truth": "Rồi, sẵn sàng ăn",
+      "normalized_prediction": "cócó bá có đã bá@@",
+      "normalized_ground_truth": "rồi sẵn sàng ăn"
+    },
+    {
+      "index": 423,
+      "prediction": "Cà acà akhoai ycà và tây",
+      "ground_truth": "Khoai tây, cà rốt",
+      "normalized_prediction": "cà acà akhoai ycà tây",
+      "normalized_ground_truth": "khoai tây cà rốt"
+    },
+    {
+      "index": 424,
+      "prediction": "Hai đèn sáng sáng đèn sá, đèn đèn giường giường đèn cửa đèn nhiều sáng sá@@",
+      "ground_truth": "Hai đèn",
+      "normalized_prediction": "hai đèn sáng sáng đèn sá đèn đèn giường giường đèn cửa đèn nhiều sáng sá@@",
+      "normalized_ground_truth": "hai đèn"
+    },
+    {
+      "index": 425,
+      "prediction": "Trên tònhà sinh và trong ngủ trên ghế giường giường mái",
+      "ground_truth": "Trên tường",
+      "normalized_prediction": "trên tònhà sinh ngủ trên ghế giường giường mái",
+      "normalized_ground_truth": "trên tường"
+    },
+    {
+      "index": 426,
+      "prediction": "Đ, x, ngđen đen trắng trắng",
+      "ground_truth": "Mỏng và trắng",
+      "normalized_prediction": "đ x ngđen đen trắng trắng",
+      "normalized_ground_truth": "mỏng trắng"
+    },
+    {
+      "index": 427,
+      "prediction": "Hai giường cửa , , nhiều và chiếc giường giường tầng",
+      "ground_truth": "Bốn",
+      "normalized_prediction": "hai giường cửa nhiều chiếc giường giường tầng",
+      "normalized_ground_truth": "bốn"
+    },
+    {
+      "index": 428,
+      "prediction": "Một tính tay máy xách và phím bàn việc",
+      "ground_truth": "Âm thanh stereo",
+      "normalized_prediction": "tính tay máy xách phím bàn việc",
+      "normalized_ground_truth": "âm thanh stereo"
+    },
+    {
+      "index": 429,
+      "prediction": "Hoa cam trắ, uố, xanh cây trắng",
+      "ground_truth": "Tạo sự tương phản",
+      "normalized_prediction": "hoa cam trắ uố xanh cây trắng",
+      "normalized_ground_truth": "tạo sự tương phản"
+    },
+    {
+      "index": 430,
+      "prediction": "Khô, tí, cà ađen cà",
+      "ground_truth": "Có lẽ là khác nhau.",
+      "normalized_prediction": "khô tí cà ađen cà",
+      "normalized_ground_truth": "có lẽ khác nhau"
+    },
+    {
+      "index": 431,
+      "prediction": "Chiếc hồ hồ được dựng để sáng trên ghế",
+      "ground_truth": "Chúng đặt cạnh nhau",
+      "normalized_prediction": "chiếc hồ hồ dựng sáng trên ghế",
+      "normalized_ground_truth": "chúng đặt cạnh nhau"
+    },
+    {
+      "index": 432,
+      "prediction": "Bên một của rửa và trên làm trong tắm bàn phê",
+      "ground_truth": "Ở giữa",
+      "normalized_prediction": "bên rửa trên làm tắm bàn phê",
+      "normalized_ground_truth": "ở giữa"
+    },
+    {
+      "index": 433,
+      "prediction": "Khu vực vực trường và vực của vực nước sông",
+      "ground_truth": "Khu vực nhận hành lý",
+      "normalized_prediction": "khu vực vực trường vực vực nước sông",
+      "normalized_ground_truth": "khu vực nhận hành lý"
+    },
+    {
+      "index": 434,
+      "prediction": "Bồn rử, vệ , rửa và vệ",
+      "ground_truth": "Thủy tinh",
+      "normalized_prediction": "bồn rử vệ rửa vệ",
+      "normalized_ground_truth": "thủy tinh"
+    },
+    {
+      "index": 435,
+      "prediction": "Khô, là hình đen trắng đen đen ng.",
+      "ground_truth": "Một chiếc xe lửa",
+      "normalized_prediction": "khô hình đen trắng đen đen ng",
+      "normalized_ground_truth": "chiếc xe lửa"
+    },
+    {
+      "index": 436,
+      "prediction": "Trên bàn việc bàn phê bên một bàn m.",
+      "ground_truth": "Trên bàn",
+      "normalized_prediction": "trên bàn việc bàn phê bên bàn m",
+      "normalized_ground_truth": "trên bàn"
+    },
+    {
+      "index": 437,
+      "prediction": "Bên bàn phê phê bên cạnh cà ng. bàn ăn",
+      "ground_truth": "Bên cạnh lát bánh",
+      "normalized_prediction": "bên bàn phê phê bên cạnh cà ng bàn ăn",
+      "normalized_ground_truth": "bên cạnh lát bánh"
+    },
+    {
+      "index": 438,
+      "prediction": "Xx, rốt cà acà và tây",
+      "ground_truth": "Chuối và phô mai",
+      "normalized_prediction": "xx rốt cà acà tây",
+      "normalized_ground_truth": "chuối phô mai"
+    },
+    {
+      "index": 439,
+      "prediction": "Bồn ưở, vệ , rử, rửa rửa bồn",
+      "ground_truth": "Bồn rửa và nhà vệ sinh",
+      "normalized_prediction": "bồn ưở vệ rử rửa rửa bồn",
+      "normalized_ground_truth": "bồn rửa nhà vệ sinh"
+    },
+    {
+      "index": 440,
+      "prediction": "Bát uố, quả được quanh trong trên uố@@",
+      "ground_truth": "Nến sconce treo trên tường gần bát",
+      "normalized_prediction": "bát uố quả quanh trên uố@@",
+      "normalized_ground_truth": "nến sconce treo trên tường gần bát"
+    },
+    {
+      "index": 441,
+      "prediction": "Màu ng, xanh trắ, ngđen trắng trắng",
+      "ground_truth": "Vàng và nâu",
+      "normalized_prediction": "màu ng xanh trắ ngđen trắng trắng",
+      "normalized_ground_truth": "vàng nâu"
+    },
+    {
+      "index": 442,
+      "prediction": "Bánh chi, uố, nướng bánh nhật",
+      "ground_truth": "Thắp nến",
+      "normalized_prediction": "bánh chi uố nướng bánh nhật",
+      "normalized_ground_truth": "thắp nến"
+    },
+    {
+      "index": 443,
+      "prediction": "Để rửa nhà sinh và vệ trong tắm sổ m.",
+      "ground_truth": "Từ cửa sổ",
+      "normalized_prediction": "rửa nhà sinh vệ tắm sổ m",
+      "normalized_ground_truth": "từ cửa sổ"
+    },
+    {
+      "index": 444,
+      "prediction": "Đngtrắng trắ, ngđen trắ@@",
+      "ground_truth": "Đĩa trắng",
+      "normalized_prediction": "đngtrắng trắ ngđen trắ@@",
+      "normalized_ground_truth": "đĩa trắng"
+    },
+    {
+      "index": 445,
+      "prediction": "Hai loạ, loại khác ba ba ăn",
+      "ground_truth": "Hai loại",
+      "normalized_prediction": "hai loạ loại khác ba ba ăn",
+      "normalized_ground_truth": "hai loại"
+    },
+    {
+      "index": 446,
+      "prediction": "Màu ng, xanh trắ, ngxanh cây trắng",
+      "ground_truth": "Màu đỏ",
+      "normalized_prediction": "màu ng xanh trắ ngxanh cây trắng",
+      "normalized_ground_truth": "màu đỏ"
+    },
+    {
+      "index": 447,
+      "prediction": "Hai chiếc máy xách",
+      "ground_truth": "Hai chiếc laptop",
+      "normalized_prediction": "hai chiếc máy xách",
+      "normalized_ground_truth": "hai chiếc laptop"
+    },
+    {
+      "index": 448,
+      "prediction": "Bồn tắm nhà sinh ở phòng trong tắm bồn",
+      "ground_truth": "Chúng ở cạnh nhau",
+      "normalized_prediction": "bồn tắm nhà sinh ở phòng tắm bồn",
+      "normalized_ground_truth": "chúng ở cạnh nhau"
+    },
+    {
+      "index": 449,
+      "prediction": "Bên tònhà sinh ngoài làm bên bức đá",
+      "ground_truth": "Trên nóc tủ sách",
+      "normalized_prediction": "bên tònhà sinh ngoài làm bên bức đá",
+      "normalized_ground_truth": "trên nóc tủ sách"
+    },
+    {
+      "index": 450,
+      "prediction": "Vxanh cây trắng trắ, và lá",
+      "ground_truth": "Chữ nhật",
+      "normalized_prediction": "vxanh cây trắng trắ lá",
+      "normalized_ground_truth": "chữ nhật"
+    },
+    {
+      "index": 451,
+      "prediction": "Chúng là thành của bữa đầy đầy đủ ăn đủ",
+      "ground_truth": "Chúng được nướng cùng",
+      "normalized_prediction": "chúng thành bữa đầy đầy đủ ăn đủ",
+      "normalized_ground_truth": "chúng nướng cùng"
+    },
+    {
+      "index": 452,
+      "prediction": "Bên bàn việc bên tònhà sinh của bàn m.",
+      "ground_truth": "Trên bàn",
+      "normalized_prediction": "bên bàn việc bên tònhà sinh bàn m",
+      "normalized_ground_truth": "trên bàn"
+    },
+    {
+      "index": 453,
+      "prediction": "Màu ng, trắng trắ, ngđen trắng trắng",
+      "ground_truth": "Màu xanh",
+      "normalized_prediction": "màu ng trắng trắ ngđen trắng trắng",
+      "normalized_ground_truth": "màu xanh"
+    },
+    {
+      "index": 454,
+      "prediction": "TV cửa ở trước a , cửa trong cửa cửa . lạnh",
+      "ground_truth": "Tủ lạnh chắn một phần cửa.",
+      "normalized_prediction": "tv cửa ở trước a cửa cửa cửa lạnh",
+      "normalized_ground_truth": "tủ lạnh chắn phần cửa"
+    },
+    {
+      "index": 455,
+      "prediction": "Bông cải là phần bữa đầy của ă@@",
+      "ground_truth": "Chồng bông cải xanh nằm trên đĩa",
+      "normalized_prediction": "bông cải phần bữa đầy ă@@",
+      "normalized_ground_truth": "chồng bông cải xanh nằm trên đĩa"
+    },
+    {
+      "index": 456,
+      "prediction": "Bánh pper, chu, xích khoai và tây",
+      "ground_truth": "Có vẻ như là thịt nguội.",
+      "normalized_prediction": "bánh pper chu xích khoai tây",
+      "normalized_ground_truth": "có vẻ như thịt nguội"
+    },
+    {
+      "index": 457,
+      "prediction": "Khu ế, ngnhà sinh, vệ ,",
+      "ground_truth": "Sân sau",
+      "normalized_prediction": "khu ế ngnhà sinh vệ",
+      "normalized_ground_truth": "sân sau"
+    },
+    {
+      "index": 458,
+      "prediction": "Bông x, rốt cà akhoai và tây",
+      "ground_truth": "Rau xanh",
+      "normalized_prediction": "bông x rốt cà akhoai tây",
+      "normalized_ground_truth": "rau xanh"
+    },
+    {
+      "index": 459,
+      "prediction": "Tháp hồ hồ đồng là phần trang của sáng",
+      "ground_truth": "Đồng hồ ở cạnh rèm cửa",
+      "normalized_prediction": "tháp hồ hồ đồng phần trang sáng",
+      "normalized_ground_truth": "đồng hồ ở cạnh rèm cửa"
+    },
+    {
+      "index": 460,
+      "prediction": "Bánh x, chu, zz, và tây",
+      "ground_truth": "Frittata",
+      "normalized_prediction": "bánh x chu zz tây",
+      "normalized_ground_truth": "frittata"
+    },
+    {
+      "index": 461,
+      "prediction": "Trong cái x, cái và cái đó",
+      "ground_truth": "Trên bàn",
+      "normalized_prediction": "cái x cái cái",
+      "normalized_ground_truth": "trên bàn"
+    },
+    {
+      "index": 462,
+      "prediction": "Bồn tắm tắm cầu trong tắm nhà sinh tắm bồn",
+      "ground_truth": "Bồn cầu ngồi cạnh bồn tắm",
+      "normalized_prediction": "bồn tắm tắm cầu tắm nhà sinh tắm bồn",
+      "normalized_ground_truth": "bồn cầu ngồi cạnh bồn tắm"
+    },
+    {
+      "index": 463,
+      "prediction": "Đngtrắng trắ, ngđen trắ@@",
+      "ground_truth": "Vàng và xanh",
+      "normalized_prediction": "đngtrắng trắ ngđen trắ@@",
+      "normalized_ground_truth": "vàng xanh"
+    },
+    {
+      "index": 464,
+      "prediction": "Lò ưở, ế, vi , cà",
+      "ground_truth": "Đá granite",
+      "normalized_prediction": "lò ưở ế vi cà",
+      "normalized_ground_truth": "đá granite"
+    },
+    {
+      "index": 465,
+      "prediction": "Màu trắ, ngđen trắng xanh trắ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu trắ ngđen trắng xanh trắ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 466,
+      "prediction": "Khô, có là nội của sáng lớ@@",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "khô có nội sáng lớ@@",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 467,
+      "prediction": "Màu ng, xanh trắ, ngđen trắng trắng",
+      "ground_truth": "Màu trắng",
+      "normalized_prediction": "màu ng xanh trắ ngđen trắng trắng",
+      "normalized_ground_truth": "màu trắng"
+    },
+    {
+      "index": 468,
+      "prediction": "Bánh nhật và bánh nhật được bày trang .",
+      "ground_truth": "Chủ đề trang trại",
+      "normalized_prediction": "bánh nhật bánh nhật bày trang",
+      "normalized_ground_truth": "chủ đề trang trại"
+    },
+    {
+      "index": 469,
+      "prediction": "Trên bàn việc bàn bên một bàn việ@@",
+      "ground_truth": "Trên quầy gạch",
+      "normalized_prediction": "trên bàn việc bàn bên bàn việ@@",
+      "normalized_ground_truth": "trên quầy gạch"
+    },
+    {
+      "index": 470,
+      "prediction": "Hai ghế ghế , , chiếc dài ghế nhiều ghế",
+      "ground_truth": "Hai chiếc",
+      "normalized_prediction": "hai ghế ghế chiếc dài ghế nhiều ghế",
+      "normalized_ground_truth": "hai chiếc"
+    },
+    {
+      "index": 471,
+      "prediction": "Hai rửa nhà sinh bồn bồn hai rửa bồn",
+      "ground_truth": "Hai",
+      "normalized_prediction": "hai rửa nhà sinh bồn bồn hai rửa bồn",
+      "normalized_ground_truth": "hai"
+    },
+    {
+      "index": 472,
+      "prediction": "Đngtrắng trắ, ngđen trắ@@",
+      "ground_truth": "Màu xanh",
+      "normalized_prediction": "đngtrắng trắ ngđen trắ@@",
+      "normalized_ground_truth": "màu xanh"
+    },
+    {
+      "index": 473,
+      "prediction": "Hai bá, đĩa ăn sá, nhiều ăn",
+      "ground_truth": "Ba vật phẩm",
+      "normalized_prediction": "hai bá đĩa ăn sá nhiều ăn",
+      "normalized_ground_truth": "ba vật phẩm"
+    },
+    {
+      "index": 474,
+      "prediction": "Bồn rử, vệ , rửa và vệ ng.",
+      "ground_truth": "Gương, bồn rửa và đèn",
+      "normalized_prediction": "bồn rử vệ rửa vệ ng",
+      "normalized_ground_truth": "gương bồn rửa đèn"
+    },
+    {
+      "index": 475,
+      "prediction": "Ghế bar ghế bàn phê ở trên bp. bếp",
+      "ground_truth": "Ghế dựa vào quầy",
+      "normalized_prediction": "ghế bar ghế bàn phê ở trên bp bếp",
+      "normalized_ground_truth": "ghế dựa vào quầy"
+    },
+    {
+      "index": 476,
+      "prediction": "Bánh rán rán được trên đĩa trên ăn đĩa",
+      "ground_truth": "Bánh sandwich đang nằm trên đĩa",
+      "normalized_prediction": "bánh rán rán trên đĩa trên ăn đĩa",
+      "normalized_ground_truth": "bánh sandwich đang nằm trên đĩa"
+    },
+    {
+      "index": 477,
+      "prediction": "Màu trắ, ngđen trắng trắng trắ@@",
+      "ground_truth": "Màu nâu",
+      "normalized_prediction": "màu trắ ngđen trắng trắng trắ@@",
+      "normalized_ground_truth": "màu nâu"
+    },
+    {
+      "index": 478,
+      "prediction": "Hai chiếc x, chiếc rán chiếc chiếc",
+      "ground_truth": "Năm chiếc",
+      "normalized_prediction": "hai chiếc x chiếc rán chiếc chiếc",
+      "normalized_ground_truth": "năm chiếc"
+    },
+    {
+      "index": 479,
+      "prediction": "Bông x, cải anhcà và tây",
+      "ground_truth": "Bông cải xanh, nấm và ớt",
+      "normalized_prediction": "bông x cải anhcà tây",
+      "normalized_ground_truth": "bông cải xanh nấm ớt"
+    },
+    {
+      "index": 480,
+      "prediction": "Lò ưở, x, vi , và nướng bàn phê",
+      "ground_truth": "Tivi và sushi",
+      "normalized_prediction": "lò ưở x vi nướng bàn phê",
+      "normalized_ground_truth": "tivi sushi"
+    },
+    {
+      "index": 481,
+      "prediction": "Hai uố, nhiều khác khác ba quả@@",
+      "ground_truth": "Một bó",
+      "normalized_prediction": "hai uố nhiều khác khác ba quả@@",
+      "normalized_ground_truth": "một bó"
+    },
+    {
+      "index": 482,
+      "prediction": "Trên một bàn việc ngoài của cái đó@@",
+      "ground_truth": "Trên bàn",
+      "normalized_prediction": "trên bàn việc ngoài cái đó@@",
+      "normalized_ground_truth": "trên bàn"
+    },
+    {
+      "index": 483,
+      "prediction": "Màu trắ, đỏtrắng xanh cây trắ@@",
+      "ground_truth": "Xanh và đỏ",
+      "normalized_prediction": "màu trắ đỏtrắng xanh cây trắ@@",
+      "normalized_ground_truth": "xanh đỏ"
+    },
+    {
+      "index": 484,
+      "prediction": "Bên một bàn bên tònhà cạnh sổ@@",
+      "ground_truth": "Trong bình thuỷ tinh",
+      "normalized_prediction": "bên bàn bên tònhà cạnh sổ@@",
+      "normalized_ground_truth": "bình thuỷ tinh"
+    },
+    {
+      "index": 485,
+      "prediction": "Hai loạ, loại khác khác nhiều khác",
+      "ground_truth": "Hai loại",
+      "normalized_prediction": "hai loạ loại khác khác nhiều khác",
+      "normalized_ground_truth": "hai loại"
+    },
+    {
+      "index": 486,
+      "prediction": "Giường giường giường ghế giường được dựng trong ngủ giường",
+      "ground_truth": "Giường gần tường",
+      "normalized_prediction": "giường giường giường ghế giường dựng ngủ giường",
+      "normalized_ground_truth": "giường gần tường"
+    },
+    {
+      "index": 487,
+      "prediction": "Một người nữ một nhà sinh và phụ",
+      "ground_truth": "Một người đàn ông và cậu bé",
+      "normalized_prediction": "người nữ nhà sinh phụ",
+      "normalized_ground_truth": "người đàn ông cậu bé"
+    },
+    {
+      "index": 488,
+      "prediction": "Ly rượu uống uống ly ly vang ly phê phê",
+      "ground_truth": "Ly nước đặt trước ly trà đá",
+      "normalized_prediction": "ly rượu uống uống ly ly vang ly phê phê",
+      "normalized_ground_truth": "ly nước đặt trước ly trà đá"
+    },
+    {
+      "index": 489,
+      "prediction": "Vx, vệ , và vệ bằng",
+      "ground_truth": "Bằng gỗ",
+      "normalized_prediction": "vx vệ vệ bằng",
+      "normalized_ground_truth": "bằng gỗ"
+    },
+    {
+      "index": 490,
+      "prediction": "Bồn rử, vệ , rửa nhà sinhbồn",
+      "ground_truth": "Nhà vệ sinh, bồn rửa, bồn tắm",
+      "normalized_prediction": "bồn rử vệ rửa nhà sinhbồn",
+      "normalized_ground_truth": "nhà vệ sinh bồn rửa bồn tắm"
+    },
+    {
+      "index": 491,
+      "prediction": "Trên giường giường ghế giường một giường trên sổ ngủ giường bàn việc giường dưới sổ",
+      "ground_truth": "Trên bàn cạnh giường",
+      "normalized_prediction": "trên giường giường ghế giường giường trên sổ ngủ giường bàn việc giường dưới sổ",
+      "normalized_ground_truth": "trên bàn cạnh giường"
+    },
+    {
+      "index": 492,
+      "prediction": "Hình người nữ cổ cổ và con đen trắng",
+      "ground_truth": "Hình vô lăng",
+      "normalized_prediction": "hình người nữ cổ cổ con đen trắng",
+      "normalized_ground_truth": "hình vô lăng"
+    },
+    {
+      "index": 493,
+      "prediction": "Chúng là thành của bữa đầy đầy đủ đủ sáng",
+      "ground_truth": "Chúng cùng ở trong một bát",
+      "normalized_prediction": "chúng thành bữa đầy đầy đủ đủ sáng",
+      "normalized_ground_truth": "chúng cùng ở bát"
+    },
+    {
+      "index": 494,
+      "prediction": "Bên tònhà sinh bên một của sổ@@",
+      "ground_truth": "Trên đầu bếp",
+      "normalized_prediction": "bên tònhà sinh bên sổ@@",
+      "normalized_ground_truth": "trên đầu bếp"
+    },
+    {
+      "index": 495,
+      "prediction": "Lò ưở, vệ , rửa nhà sinhlò",
+      "ground_truth": "Bằng gỗ",
+      "normalized_prediction": "lò ưở vệ rửa nhà sinhlò",
+      "normalized_ground_truth": "bằng gỗ"
+    },
+    {
+      "index": 496,
+      "prediction": "Một cái x, cái màu và cái",
+      "ground_truth": "Cạnh một ngọn nến",
+      "normalized_prediction": "cái x cái màu cái",
+      "normalized_ground_truth": "cạnh ngọn nến"
+    },
+    {
+      "index": 497,
+      "prediction": "Một uố, và cái đó để bá@@",
+      "ground_truth": "Hai kẹp chuối nhỏ",
+      "normalized_prediction": "uố cái bá@@",
+      "normalized_ground_truth": "hai kẹp chuối nhỏ"
+    },
+    {
+      "index": 498,
+      "prediction": "Hai so, nhiều đồ và đồ thất giường giường",
+      "ground_truth": "Ba món",
+      "normalized_prediction": "hai so nhiều đồ đồ thất giường giường",
+      "normalized_ground_truth": "ba món"
+    },
+    {
+      "index": 499,
+      "prediction": "Cả hai là thành của sáng của sá@@",
+      "ground_truth": "Cả hai đều chứa trong bát",
+      "normalized_prediction": "cả hai thành sáng sá@@",
+      "normalized_ground_truth": "cả hai đều chứa bát"
+    }
+  ]
+}
