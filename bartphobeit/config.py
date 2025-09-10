@@ -8,9 +8,9 @@ def get_improved_config():
         'decoder_model': 'vinai/bartpho-word',  # Same as encoder - full BART
         'hidden_dim': 1024,  # BARTPho dimension
         'max_length': 128,
-        'batch_size': 16,
-        'num_epochs': 10,
-        'image_dir': '/home/tgng/coding/modeltuner/data/preprocessed_images',
+        'batch_size': 32,
+        'num_epochs': 20,
+        'image_dir': '/root/modeltuner/modeltuner/data/preprocessed_images',
         'device': 'cuda' if torch.cuda.is_available() else 'cpu',
         
         # BARTPhoBEiT specific configurations
@@ -26,8 +26,8 @@ def get_improved_config():
         'vision_mask_block_size': 4,  # Block size for vision masking
         
         # Staged training configuration
-        'stage1_epochs': 4,  # Freeze encoders
-        'stage2_epochs':6,  # Partial unfreeze
+        'stage1_epochs': 8,  # Freeze encoders
+        'stage2_epochs': 12,  # Partial unfreeze
         
         # Different learning rates
         'decoder_lr': 1e-4,
