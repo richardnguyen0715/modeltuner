@@ -4,9 +4,9 @@ def get_improved_config():
     """Improved configuration with BARTPhoBEiT enhancements"""
     return {
         'vision_model': 'google/vit-base-patch16-224-in21k',
-        'text_model': 'vinai/phobert-large',
-        'decoder_model': 'vinai/bartpho-word',
-        'hidden_dim': 1024,  # PhoBERT-large dimension
+        'text_model': 'vinai/bartpho-word',  # Use full BART
+        'decoder_model': 'vinai/bartpho-word',  # Same as encoder - full BART
+        'hidden_dim': 1024,  # BARTPho dimension
         'max_length': 128,
         'batch_size': 16,
         'num_epochs': 10,
@@ -22,7 +22,8 @@ def get_improved_config():
         'use_unified_masking': True,
         'text_mask_ratio': 0.15,  # 15% for monomodal text
         'multimodal_text_mask_ratio': 0.50,  # 50% for multimodal text
-        'vision_mask_ratio': 0.40,  # 40% for image patches
+        'vision_mask_ratio': 0.40,  # 40% for image patches - block-wise
+        'vision_mask_block_size': 4,  # Block size for vision masking
         
         # Staged training configuration
         'stage1_epochs': 4,  # Freeze encoders
@@ -60,4 +61,5 @@ def get_improved_config():
         'save_predictions': True,
         'calculate_bleu_rouge': True,
         'calculate_cider': True,
+        'calculate_wups': True,  # Enable WUPS metrics
     }

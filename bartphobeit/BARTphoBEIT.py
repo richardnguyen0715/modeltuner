@@ -6,8 +6,7 @@ import torchvision.transforms as transforms
 from transformers import (
     AutoTokenizer, AutoModel, 
     ViTFeatureExtractor, ViTModel,
-    # Sử dụng MBartForConditionalGeneration thay vì BartForConditionalGeneration
-    MBartForConditionalGeneration
+    BartForConditionalGeneration
 )
 from transformers.modeling_outputs import BaseModelOutput
 from PIL import Image
@@ -140,8 +139,8 @@ class VietnameseVQAModel(nn.Module):
         
         # Text decoder (Vietnamese BART/BARTPho)
         self.decoder_tokenizer = AutoTokenizer.from_pretrained(model_config['decoder_model'])
-        self.text_decoder = MBartForConditionalGeneration.from_pretrained(model_config['decoder_model'])
-        
+        self.text_decoder = BartForConditionalGeneration.from_pretrained(model_config['decoder_model'])
+
         # Fusion layer
         hidden_dim = model_config.get('hidden_dim', 768)
         self.fusion_layer = MultimodalFusionLayer(vision_dim, text_dim, hidden_dim)

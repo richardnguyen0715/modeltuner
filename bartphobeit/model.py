@@ -10,7 +10,9 @@ from transformers.modeling_outputs import BaseModelOutput
 import re
 import unicodedata
 import random
+import numpy as np
 from difflib import SequenceMatcher
+import math
 
 class MultiWayTransformerLayer(nn.Module):
     """
@@ -126,7 +128,7 @@ class VQKDVisualTokenizer(nn.Module):
         self.codebook = nn.Embedding(vocab_size, embed_dim)
         
         # Teacher model (sử dụng pre-trained ViT)
-        self.teacher_model = ViTModel.from_pretrained("microsoft/beit-base-patch16-224")
+        self.teacher_model = ViTModel.from_pretrained("google/vit-base-patch16-224-in21k")
         for param in self.teacher_model.parameters():
             param.requires_grad = False  # Freeze teacher
         
@@ -197,9 +199,10 @@ class VQKDVisualTokenizer(nn.Module):
         
         # VQ-KD Loss components
         # 1. Cosine similarity loss: maximize cos(o_i, t_i)
+        teacher_dim = teacher_features.size(-1)
         cosine_loss = 1 - F.cosine_similarity(
-            reconstructed_normalized.view(-1, self.teacher_dim),
-            teacher_normalized.view(-1, self.teacher_dim),
+            reconstructed_normalized.view(-1, teacher_dim),
+            teacher_normalized.view(-1, teacher_dim),
             dim=-1
         ).mean()
         
@@ -296,8 +299,112 @@ class MultiwayFusionLayer(nn.Module):
         
         return x, combined_attention_mask
 
+def apply_block_wise_vision_masking(vision_features, mask_ratio=0.4, block_size=4):
+    """
+    Apply block-wise masking to vision patches according to BARTPhoBEiT paper
+    Args:
+        vision_features: [batch, num_patches, dim]
+        mask_ratio: Ratio of patches to mask (0.4 = 40%)
+        block_size: Size of each mask block
+    """
+    batch_size, num_patches, dim = vision_features.shape
+    
+    # ViT has CLS token at position 0, patches start from position 1
+    has_cls_token = True  # ViT always has CLS token
+    actual_patches = num_patches - 1  # 196 patches (197 - 1 CLS)
+    grid_size = int(math.sqrt(actual_patches))  # 14x14 = 196
+    
+    if grid_size * grid_size != actual_patches:
+        print(f"Warning: Cannot form perfect square grid. patches={actual_patches}, grid_size={grid_size}")
+        return vision_features, torch.zeros(batch_size, num_patches, device=vision_features.device, dtype=torch.bool)
+    
+    masked_features = vision_features.clone()
+    mask_indicators = torch.zeros(batch_size, num_patches, device=vision_features.device, dtype=torch.bool)
+    
+    # FIX: Use a more aggressive masking approach
+    for batch_idx in range(batch_size):
+        # Calculate total patches to mask
+        target_masked_patches = int(actual_patches * mask_ratio)
+        
+        # FIX: Use random patch-based masking if block-based doesn't achieve target
+        blocks_per_dim = grid_size // block_size  # 14 // 4 = 3
+        max_blocks_per_dim = (grid_size + block_size - 1) // block_size  # Ceiling division = 4
+        
+        # Try overlapping blocks to achieve higher masking ratio
+        all_possible_blocks = []
+        for i in range(max_blocks_per_dim):
+            for j in range(max_blocks_per_dim):
+                start_i = min(i * block_size, grid_size - block_size)
+                start_j = min(j * block_size, grid_size - block_size)
+                all_possible_blocks.append((start_i, start_j))
+        
+        # Calculate how many blocks needed for target ratio
+        patches_per_block = min(block_size * block_size, actual_patches)
+        num_blocks_needed = max(1, (target_masked_patches + patches_per_block - 1) // patches_per_block)
+        num_blocks_to_use = min(num_blocks_needed, len(all_possible_blocks))
+        
+        # Randomly select blocks
+        selected_blocks = random.sample(all_possible_blocks, num_blocks_to_use)
+        
+        total_masked_patches = 0
+        masked_patch_set = set()
+        
+        # Apply masking to selected blocks
+        for block_i, block_j in selected_blocks:
+            end_i = min(block_i + block_size, grid_size)
+            end_j = min(block_j + block_size, grid_size)
+            
+            # FIX: Zero out the features correctly and track indices
+            for pi in range(block_i, end_i):
+                for pj in range(block_j, end_j):
+                    patch_idx = pi * grid_size + pj
+                    if patch_idx not in masked_patch_set and patch_idx < actual_patches:
+                        # Convert to tensor index (add 1 for CLS token)
+                        tensor_idx = patch_idx + 1
+                        
+                        # Actually zero out the features
+                        masked_features[batch_idx, tensor_idx, :] = 0.0
+                        mask_indicators[batch_idx, tensor_idx] = True
+                        
+                        masked_patch_set.add(patch_idx)
+                        total_masked_patches += 1
+        
+        # FIX: If still not enough, add random patches
+        if total_masked_patches < target_masked_patches:
+            remaining_patches = target_masked_patches - total_masked_patches
+            unmasked_patches = [i for i in range(actual_patches) if i not in masked_patch_set]
+            
+            if len(unmasked_patches) > 0:
+                additional_patches = random.sample(
+                    unmasked_patches, 
+                    min(remaining_patches, len(unmasked_patches))
+                )
+                
+                for patch_idx in additional_patches:
+                    tensor_idx = patch_idx + 1
+                    masked_features[batch_idx, tensor_idx, :] = 0.0
+                    mask_indicators[batch_idx, tensor_idx] = True
+                    total_masked_patches += 1
+        
+        # Enhanced debug info
+        actual_mask_ratio = total_masked_patches / actual_patches
+        print(f"  Batch {batch_idx}: {len(selected_blocks)} blocks selected, "
+              f"{total_masked_patches}/{actual_patches} patches ({actual_mask_ratio:.3f} ratio)")
+        print(f"    Target: {target_masked_patches} patches ({mask_ratio:.3f} ratio)")
+        
+        # Verify masking worked by checking some masked patches
+        if total_masked_patches > 0:
+            sample_masked_idx = list(masked_patch_set)[:3]  # Check first 3 masked patches
+            for idx in sample_masked_idx:
+                tensor_idx = idx + 1
+                patch_norm = masked_features[batch_idx, tensor_idx, :].norm().item()
+                print(f"    Masked patch {idx} (tensor idx {tensor_idx}): norm = {patch_norm:.6f}")
+    
+    return masked_features, mask_indicators
+
+
 class ImprovedVietnameseVQAModel(nn.Module):
-    """Enhanced Vietnamese VQA Model với Multiway Transformers và VQ-KD"""
+    """Enhanced Vietnamese VQA Model với Full BART và Block-wise Vision Masking"""
     
     def __init__(self, model_config):
         super().__init__()
@@ -307,14 +414,23 @@ class ImprovedVietnameseVQAModel(nn.Module):
         self.vision_model = ViTModel.from_pretrained(model_config['vision_model'])
         vision_dim = self.vision_model.config.hidden_size  # 768
         
-        # Text encoder (PhoBERT)
-        self.text_model = AutoModel.from_pretrained(model_config['text_model'])
-        text_dim = self.text_model.config.hidden_size  # 1024
+        # Load BART model only once
+        bart_model = MBartForConditionalGeneration.from_pretrained(model_config['text_model'])
+        text_dim = bart_model.config.d_model  # 1024 for BARTPho
         
-        # Text decoder (BARTPho)
+        # Use BART encoder for text encoding
+        self.text_encoder = bart_model.get_encoder()
+        
+        self.text_decoder = bart_model  # Reuse the same model
+        
+        # Tokenizer
         self.decoder_tokenizer = AutoTokenizer.from_pretrained(model_config['decoder_model'])
-        self.text_decoder = MBartForConditionalGeneration.from_pretrained(model_config['decoder_model'])
-        
+
+        print(f"Using full BART model: {model_config['text_model']}")
+        print(f"  Vision model: {model_config['vision_model']} (dim: {vision_dim})")
+        print(f"  Text model: {model_config['text_model']} (dim: {text_dim})")
+        print(f"  Decoder model: {model_config['decoder_model']} (dim: {text_dim})")
+
         # VQ-KD Visual Tokenizer
         use_vqkd = model_config.get('use_vqkd', True)
         if use_vqkd:
@@ -333,13 +449,13 @@ class ImprovedVietnameseVQAModel(nn.Module):
         dropout_rate = model_config.get('dropout_rate', 0.1)
         num_multiway_layers = model_config.get('num_multiway_layers', 6)
         
-        assert hidden_dim == text_dim, f"hidden_dim ({hidden_dim}) must match PhoBERT dim ({text_dim})"
+        assert hidden_dim == text_dim, f"hidden_dim ({hidden_dim}) must match BART dim ({text_dim})"
         
         self.fusion_layer = MultiwayFusionLayer(
             vision_dim, text_dim, hidden_dim, num_multiway_layers, dropout_rate
         )
         
-        # Output projection
+        # Output projection to BART decoder dimension
         decoder_dim = self.text_decoder.config.d_model
         assert decoder_dim == hidden_dim, f"Decoder dim ({decoder_dim}) must match hidden dim ({hidden_dim})"
         
@@ -351,11 +467,12 @@ class ImprovedVietnameseVQAModel(nn.Module):
             nn.LayerNorm(decoder_dim)
         )
         
-        # Masking strategy
+        # Block-wise masking configuration
         self.use_masking = model_config.get('use_unified_masking', False)
+        self.vision_mask_ratio = model_config.get('vision_mask_ratio', 0.4)
+        self.vision_mask_block_size = model_config.get('vision_mask_block_size', 4)
         self.text_mask_ratio = model_config.get('text_mask_ratio', 0.15)
         self.multimodal_text_mask_ratio = model_config.get('multimodal_text_mask_ratio', 0.5)
-        self.vision_mask_ratio = model_config.get('vision_mask_ratio', 0.4)
         
         # Label smoothing loss
         self.label_smoothing = model_config.get('label_smoothing', 0.1)
@@ -377,38 +494,30 @@ class ImprovedVietnameseVQAModel(nn.Module):
         self._debug_step = 0
         self._debug_freq = 100
 
-        print(f"Enhanced BARTPhoBEiT Model:")
+        print(f"Enhanced BARTPhoBEiT Model with Full BART:")
         print(f"  Vision model: {model_config['vision_model']} (dim: {vision_dim})")
         print(f"  Text model: {model_config['text_model']} (dim: {text_dim})")
         print(f"  Decoder model: {model_config['decoder_model']} (dim: {decoder_dim})")
         print(f"  Hidden dim: {hidden_dim}")
         print(f"  Multiway layers: {num_multiway_layers}")
         print(f"  VQ-KD enabled: {use_vqkd}")
-        print(f"  Unified masking: {self.use_masking}")
+        print(f"  Block-wise masking: {self.use_masking} (ratio: {self.vision_mask_ratio}, block_size: {self.vision_mask_block_size})")
         print(f"  Label smoothing: {self.label_smoothing}")
     
-    def apply_masking(self, tokens, mask_ratio=0.15, is_vision=False):
-        """Apply masking strategy theo paper"""
+    def apply_text_masking(self, tokens, mask_ratio=0.15):
+        """Apply text masking strategy"""
         if not self.training or not self.use_masking:
             return tokens, None
         
-        batch_size, seq_len = tokens.shape[:2]
+        batch_size, seq_len = tokens.shape
         
-        if is_vision:
-            # Block-wise masking cho vision patches
-            mask = torch.rand(batch_size, seq_len, device=tokens.device) < mask_ratio
-            # TODO: Implement block-wise strategy thay vì random
-        else:
-            # Random masking cho text
-            mask = torch.rand(batch_size, seq_len, device=tokens.device) < mask_ratio
+        # Random masking for text
+        mask = torch.rand(batch_size, seq_len, device=tokens.device) < mask_ratio
         
         masked_tokens = tokens.clone()
-        if not is_vision:
-            # Replace với mask token cho text
-            masked_tokens[mask] = self.decoder_tokenizer.mask_token_id
-        else:
-            # Zero out cho vision patches
-            masked_tokens[mask] = 0
+        # Replace with mask token for text
+        mask_token_id = self.decoder_tokenizer.mask_token_id or self.decoder_tokenizer.pad_token_id
+        masked_tokens[mask] = mask_token_id
         
         return masked_tokens, mask
     
@@ -420,7 +529,7 @@ class ImprovedVietnameseVQAModel(nn.Module):
             param.requires_grad = False
             frozen_params += param.numel()
             
-        for param in self.text_model.parameters():
+        for param in self.text_encoder.parameters():
             param.requires_grad = False
             frozen_params += param.numel()
             
@@ -430,25 +539,21 @@ class ImprovedVietnameseVQAModel(nn.Module):
         """Enhanced partial unfreezing with better layer detection"""
         unfrozen_params = 0
         
-        # PhoBERT unfreezing
-        print(f"\nPhoBERT structure analysis:")
-        phobert_layers = None
+        # BART encoder unfreezing
+        print(f"\nBART encoder structure analysis:")
+        bart_layers = None
         
-        if hasattr(self.text_model, 'encoder'):
-            if hasattr(self.text_model.encoder, 'layer'):
-                phobert_layers = self.text_model.encoder.layer
-                print(f"  Found encoder.layer with {len(phobert_layers)} layers")
-            elif hasattr(self.text_model.encoder, 'layers'):
-                phobert_layers = self.text_model.encoder.layers
-                print(f"  Found encoder.layers with {len(phobert_layers)} layers")
+        if hasattr(self.text_encoder, 'layers'):
+            bart_layers = self.text_encoder.layers
+            print(f"  Found encoder.layers with {len(bart_layers)} layers")
         
-        if phobert_layers:
-            for i, layer in enumerate(phobert_layers[-unfreeze_last_n_layers:], len(phobert_layers)-unfreeze_last_n_layers):
+        if bart_layers:
+            for i, layer in enumerate(bart_layers[-unfreeze_last_n_layers:], len(bart_layers)-unfreeze_last_n_layers):
                 layer_params = sum(p.numel() for p in layer.parameters())
                 for param in layer.parameters():
                     param.requires_grad = True
                     unfrozen_params += param.numel()
-                print(f"    Unfrozen PhoBERT layer {i}: {layer_params:,} params")
+                print(f"    Unfrozen BART encoder layer {i}: {layer_params:,} params")
         
         # ViT unfreezing
         print(f"\nViT structure analysis:")
@@ -470,28 +575,28 @@ class ImprovedVietnameseVQAModel(nn.Module):
                     unfrozen_params += param.numel()
                 print(f"    Unfrozen ViT layer {i}: {layer_params:,} params")
         
-        # Always unfreeze pooler and layer norms
-        pooler_params = 0
-        for name, param in self.text_model.named_parameters():
-            if any(keyword in name.lower() for keyword in ['pooler', 'layernorm', 'layer_norm']):
+        # Always unfreeze layer norms and embeddings
+        norm_params = 0
+        for name, param in self.text_encoder.named_parameters():
+            if any(keyword in name.lower() for keyword in ['layernorm', 'layer_norm', 'embed']):
                 if not param.requires_grad:
-                    pooler_params += param.numel()
+                    norm_params += param.numel()
                 param.requires_grad = True
         
         for name, param in self.vision_model.named_parameters():
-            if any(keyword in name.lower() for keyword in ['pooler', 'layernorm', 'layer_norm']):
+            if any(keyword in name.lower() for keyword in ['layernorm', 'layer_norm', 'embed']):
                 if not param.requires_grad:
-                    pooler_params += param.numel()
+                    norm_params += param.numel()
                 param.requires_grad = True
         
-        unfrozen_params += pooler_params
+        unfrozen_params += norm_params
         
         print(f"\nPartial unfreezing summary:")
         print(f"  Total unfrozen parameters: {unfrozen_params:,}")
         print(f"  Last {unfreeze_last_n_layers} layers unfrozen successfully")
     
     def create_encoder_outputs(self, encoder_states):
-        """Create proper encoder outputs for MBART decoder"""
+        """Create proper encoder outputs for BART decoder"""
         return BaseModelOutput(
             last_hidden_state=encoder_states,
             hidden_states=None,
@@ -518,14 +623,16 @@ class ImprovedVietnameseVQAModel(nn.Module):
             vision_features = quantized_vision
             vq_losses = vq_loss_dict
         
-        # Apply vision masking
+        # Apply block-wise vision masking
         if self.use_masking and self.training:
-            vision_features, vision_mask = self.apply_masking(
-                vision_features, self.vision_mask_ratio, is_vision=True
+            vision_features, vision_mask = apply_block_wise_vision_masking(
+                vision_features, 
+                mask_ratio=self.vision_mask_ratio,
+                block_size=self.vision_mask_block_size
             )
         
-        # Encode question
-        text_outputs = self.text_model(
+        # Encode question using BART encoder
+        text_outputs = self.text_encoder(
             input_ids=question_input_ids,
             attention_mask=question_attention_mask
         )
@@ -534,11 +641,11 @@ class ImprovedVietnameseVQAModel(nn.Module):
         # Apply text masking
         if self.use_masking and self.training:
             mask_ratio = self.multimodal_text_mask_ratio if is_multimodal else self.text_mask_ratio
-            masked_question_ids, text_mask = self.apply_masking(
-                question_input_ids, mask_ratio, is_vision=False
+            masked_question_ids, text_mask = self.apply_text_masking(
+                question_input_ids, mask_ratio
             )
             # Re-encode với masked tokens
-            masked_text_outputs = self.text_model(
+            masked_text_outputs = self.text_encoder(
                 input_ids=masked_question_ids,
                 attention_mask=question_attention_mask
             )
@@ -683,44 +790,105 @@ class ImprovedVietnameseVQAModel(nn.Module):
         
         return pooled
 
-def compute_vqa_score_single(prediction, reference_answers):
+# WUPS Metrics Implementation
+def compute_wups(predicted_answers, reference_answers_list, threshold=0.0):
     """
-    Compute VQA score for single prediction against multiple reference answers
-    VQA Score = min(# humans that provided that answer / 3, 1.0)
+    Compute WUPS (Word-level Unigram Precision-based Semantic) score
+    Args:
+        predicted_answers: List of predicted answer strings
+        reference_answers_list: List of lists of reference answer strings
+        threshold: WUPS threshold (0.0 or 0.9)
     """
-    if not reference_answers:
+    try:
+        from nltk.corpus import wordnet
+        import nltk
+        nltk.download('wordnet', quiet=True)
+        nltk.download('omw-1.4', quiet=True)
+    except ImportError:
+        print("Warning: NLTK not available for WUPS computation")
         return 0.0
     
-    norm_pred = normalize_vietnamese_answer(prediction)
-    norm_refs = [normalize_vietnamese_answer(ref) for ref in reference_answers]
+    def get_wordnet_similarity(word1, word2):
+        """Get WordNet-based similarity between two words"""
+        if word1 == word2:
+            return 1.0
+        
+        synsets1 = wordnet.synsets(word1)
+        synsets2 = wordnet.synsets(word2)
+        
+        if not synsets1 or not synsets2:
+            return 0.0
+        
+        max_similarity = 0.0
+        for syn1 in synsets1:
+            for syn2 in synsets2:
+                similarity = syn1.path_similarity(syn2)
+                if similarity and similarity > max_similarity:
+                    max_similarity = similarity
+        
+        return max_similarity if max_similarity is not None else 0.0
     
-    match_count = norm_refs.count(norm_pred)
-    vqa_score = min(match_count / 3.0, 1.0)
+    def compute_wups_single(pred_tokens, ref_tokens_list, threshold):
+        """Compute WUPS for single prediction against multiple references"""
+        best_wups = 0.0
+        
+        for ref_tokens in ref_tokens_list:
+            if not pred_tokens and not ref_tokens:
+                wups_score = 1.0
+            elif not pred_tokens or not ref_tokens:
+                wups_score = 0.0
+            else:
+                # Compute precision and recall
+                precision_scores = []
+                for pred_word in pred_tokens:
+                    max_sim = 0.0
+                    for ref_word in ref_tokens:
+                        sim = get_wordnet_similarity(pred_word.lower(), ref_word.lower())
+                        if sim >= threshold:
+                            max_sim = max(max_sim, sim)
+                    precision_scores.append(max_sim)
+                
+                recall_scores = []
+                for ref_word in ref_tokens:
+                    max_sim = 0.0
+                    for pred_word in pred_tokens:
+                        sim = get_wordnet_similarity(ref_word.lower(), pred_word.lower())
+                        if sim >= threshold:
+                            max_sim = max(max_sim, sim)
+                    recall_scores.append(max_sim)
+                
+                precision = sum(precision_scores) / len(precision_scores) if precision_scores else 0.0
+                recall = sum(recall_scores) / len(recall_scores) if recall_scores else 0.0
+                
+                if precision + recall > 0:
+                    wups_score = 2 * precision * recall / (precision + recall)
+                else:
+                    wups_score = 0.0
+            
+            best_wups = max(best_wups, wups_score)
+        
+        return best_wups
     
-    return vqa_score
+    wups_scores = []
+    
+    for pred_answer, ref_answers in zip(predicted_answers, reference_answers_list):
+        # Normalize and tokenize
+        pred_normalized = normalize_vietnamese_answer(pred_answer)
+        pred_tokens = pred_normalized.split()
+        
+        ref_tokens_list = []
+        for ref_answer in ref_answers:
+            ref_normalized = normalize_vietnamese_answer(ref_answer)
+            ref_tokens_list.append(ref_normalized.split())
+        
+        wups_score = compute_wups_single(pred_tokens, ref_tokens_list, threshold)
+        wups_scores.append(wups_score)
+    
+    return sum(wups_scores) / len(wups_scores) if wups_scores else 0.0
 
-def compute_vqa_score_batch(predictions, all_reference_answers_list):
-    """
-    Compute VQA scores for batch of predictions
-    """
-    vqa_scores = []
-    
-    for pred, ref_answers in zip(predictions, all_reference_answers_list):
-        vqa_score = compute_vqa_score_single(pred, ref_answers)
-        vqa_scores.append(vqa_score)
-    
-    metrics = {
-        'vqa_score': sum(vqa_scores) / len(vqa_scores) if vqa_scores else 0.0,
-        'vqa_scores_list': vqa_scores,
-        'vqa_perfect_count': sum(1 for score in vqa_scores if score == 1.0),
-        'vqa_zero_count': sum(1 for score in vqa_scores if score == 0.0),
-        'vqa_partial_count': sum(1 for score in vqa_scores if 0.0 < score < 1.0)
-    }
-    
-    return metrics
-
+# Enhanced metrics computation with WUPS
 def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list, tokenizer=None):
-    """Enhanced evaluation metrics supporting multiple correct answers with VQA score"""
+    """Enhanced evaluation metrics supporting multiple correct answers with VQA score and WUPS"""
     
     norm_preds = [normalize_vietnamese_answer(pred) for pred in predictions]
     
@@ -729,6 +897,16 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     # VQA Score
     vqa_metrics = compute_vqa_score_batch(predictions, all_correct_answers_list)
     metrics.update(vqa_metrics)
+    
+    # WUPS metrics
+    try:
+        metrics['wups_0.0'] = compute_wups(predictions, all_correct_answers_list, threshold=0.0)
+        metrics['wups_0.9'] = compute_wups(predictions, all_correct_answers_list, threshold=0.9)
+        print(f"✓ WUPS metrics calculated successfully")
+    except Exception as e:
+        print(f"Warning: WUPS calculation failed: {e}")
+        metrics['wups_0.0'] = 0.0
+        metrics['wups_0.9'] = 0.0
     
     # Multi-answer exact match accuracy
     multi_exact_matches = []
@@ -826,7 +1004,7 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     # ROUGE-L score với multiple references
     rouge_scores = []
     try:
-        from rouge_score import rouge_scorer
+        from rouge_score import rouge_scorer  # type: ignore
         scorer = rouge_scorer.RougeScorer(['rougeL'], use_stemmer=False)
         
         for pred, correct_answers in zip(norm_preds, all_correct_answers_list):
@@ -861,15 +1039,52 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     single_metrics = compute_metrics(predictions, first_answers, tokenizer)
     
     for key, value in single_metrics.items():
-        metrics[f'single_{key}'] = value
+        if not key.startswith('wups_'):  # Avoid recursion
+            metrics[f'single_{key}'] = value
     
     metrics['total_samples'] = len(predictions)
     metrics['multi_exact_matches'] = sum(multi_exact_matches)
     
     return metrics
 
+def compute_vqa_score_single(prediction, reference_answers):
+    """
+    Compute VQA score for single prediction against multiple reference answers
+    VQA Score = min(# humans that provided that answer / 3, 1.0)
+    """
+    if not reference_answers:
+        return 0.0
+    
+    norm_pred = normalize_vietnamese_answer(prediction)
+    norm_refs = [normalize_vietnamese_answer(ref) for ref in reference_answers]
+    
+    match_count = norm_refs.count(norm_pred)
+    vqa_score = min(match_count / 3.0, 1.0)
+    
+    return vqa_score
+
+def compute_vqa_score_batch(predictions, all_reference_answers_list):
+    """
+    Compute VQA scores for batch of predictions
+    """
+    vqa_scores = []
+    
+    for pred, ref_answers in zip(predictions, all_reference_answers_list):
+        vqa_score = compute_vqa_score_single(pred, ref_answers)
+        vqa_scores.append(vqa_score)
+    
+    metrics = {
+        'vqa_score': sum(vqa_scores) / len(vqa_scores) if vqa_scores else 0.0,
+        'vqa_scores_list': vqa_scores,
+        'vqa_perfect_count': sum(1 for score in vqa_scores if score == 1.0),
+        'vqa_zero_count': sum(1 for score in vqa_scores if score == 0.0),
+        'vqa_partial_count': sum(1 for score in vqa_scores if 0.0 < score < 1.0)
+    }
+    
+    return metrics
+
 def compute_metrics(predictions, references_or_multi_answers, tokenizer=None):
-    """Enhanced compute_metrics that automatically detects multiple answers"""
+    """Enhanced compute_metrics that automatically detects multiple answers and includes WUPS"""
     
     if len(references_or_multi_answers) > 0 and isinstance(references_or_multi_answers[0], list):
         return compute_metrics_with_multiple_answers(predictions, references_or_multi_answers, tokenizer)
@@ -904,7 +1119,7 @@ def compute_metrics(predictions, references_or_multi_answers, tokenizer=None):
         
         return multi_metrics
 
-# Data augmentation functions
+# Data augmentation functions (unchanged)
 def augment_question(question, augment_ratio=0.2):
     """Simple Vietnamese question augmentation"""
     if random.random() > augment_ratio:
