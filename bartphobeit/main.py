@@ -451,7 +451,7 @@ def main():
     # Load and prepare data
     print(f"\nLoading Vietnamese VQA dataset...")
     try:
-        df = pd.read_csv('/home/tgng/coding/BARTphoBEIT_imple/text/evaluate_60k_data_balanced.csv')
+        df = pd.read_csv('/root/modeltuner/modeltuner/data/text/evaluate_60k_data_balanced.csv')
         print(f"✅ Dataset loaded: {len(df)} samples")
         
         questions = prepare_data_from_dataframe(df)

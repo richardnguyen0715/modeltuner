@@ -8,3 +8,5 @@ torchvision
 wandb
 pillow
 kagglehub
+pydrive2
+SentencePiece

@@ -14,3 +14,5 @@ __pycache__/
 .DS_Store
 .ipynb_checkpoints/
 *.pth
+client_secrets.json
+*.zip
