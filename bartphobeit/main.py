@@ -591,20 +591,20 @@ def main():
         traceback.print_exc()
         return
     
-    # Pre-training validation
-    print(f"\nRunning pre-training validation with WUPS metrics...")
-    try:
-        pre_metrics, pre_predictions, pre_references = trainer.evaluate_with_wups()
-        print(f"Pre-training Results:")
-        print(f"  VQA Score: {pre_metrics.get('vqa_score', 0.0):.4f}")
-        print(f"  WUPS 0.0: {pre_metrics.get('wups_0.0', 0.0):.4f}")
-        print(f"  WUPS 0.9: {pre_metrics.get('wups_0.9', 0.0):.4f}")
-        print(f"  Multi Fuzzy Accuracy: {pre_metrics.get('multi_fuzzy_accuracy', 0.0):.4f}")
-        print(f"  Multi Exact Accuracy: {pre_metrics.get('multi_exact_accuracy', 0.0):.4f}")
+    # # Pre-training validation
+    # print(f"\nRunning pre-training validation with WUPS metrics...")
+    # try:
+    #     pre_metrics, pre_predictions, pre_references = trainer.evaluate_with_wups()
+    #     print(f"Pre-training Results:")
+    #     print(f"  VQA Score: {pre_metrics.get('vqa_score', 0.0):.4f}")
+    #     print(f"  WUPS 0.0: {pre_metrics.get('wups_0.0', 0.0):.4f}")
+    #     print(f"  WUPS 0.9: {pre_metrics.get('wups_0.9', 0.0):.4f}")
+    #     print(f"  Multi Fuzzy Accuracy: {pre_metrics.get('multi_fuzzy_accuracy', 0.0):.4f}")
+    #     print(f"  Multi Exact Accuracy: {pre_metrics.get('multi_exact_accuracy', 0.0):.4f}")
         
-    except Exception as e:
-        print(f"⚠️  Pre-training validation failed: {e}")
-        print(f"   Proceeding with training anyway...")
+    # except Exception as e:
+    #     print(f"⚠️  Pre-training validation failed: {e}")
+    #     print(f"   Proceeding with training anyway...")
     
     # Start enhanced training
     print(f"\n{'='*80}")

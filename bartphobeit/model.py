@@ -1034,13 +1034,26 @@ def compute_metrics_with_multiple_answers(predictions, all_correct_answers_list,
     }
     metrics.update(vqa_score_distribution)
     
-    # Add standard single-answer metrics for comparison
+    # FIX: Remove recursive call - compute traditional single-answer metrics directly
     first_answers = [correct_answers[0] if correct_answers else "" for correct_answers in all_correct_answers_list]
-    single_metrics = compute_metrics(predictions, first_answers, tokenizer)
     
-    for key, value in single_metrics.items():
-        if not key.startswith('wups_'):  # Avoid recursion
-            metrics[f'single_{key}'] = value
+    # Direct traditional metrics computation (no recursion)
+    norm_first_refs = [normalize_vietnamese_answer(ref) for ref in first_answers]
+    
+    exact_matches = [pred == ref for pred, ref in zip(norm_preds, norm_first_refs)]
+    metrics['single_exact_accuracy'] = sum(exact_matches) / len(exact_matches)
+    
+    fuzzy_scores = []
+    for pred, ref in zip(norm_preds, norm_first_refs):
+        if pred == ref:
+            fuzzy_scores.append(1.0)
+        elif pred in ref or ref in pred:
+            fuzzy_scores.append(0.8)
+        else:
+            similarity = SequenceMatcher(None, pred, ref).ratio()
+            fuzzy_scores.append(similarity)
+    
+    metrics['single_fuzzy_accuracy'] = sum(fuzzy_scores) / len(fuzzy_scores)
     
     metrics['total_samples'] = len(predictions)
     metrics['multi_exact_matches'] = sum(multi_exact_matches)
@@ -1055,8 +1068,25 @@ def compute_vqa_score_single(prediction, reference_answers):
     if not reference_answers:
         return 0.0
     
+    # FIX: Handle None/empty predictions
+    if not prediction:
+        prediction = ""
+    
     norm_pred = normalize_vietnamese_answer(prediction)
-    norm_refs = [normalize_vietnamese_answer(ref) for ref in reference_answers]
+    
+    # FIX: Safe normalization with error handling
+    norm_refs = []
+    for ref in reference_answers:
+        try:
+            if ref is not None:
+                norm_ref = normalize_vietnamese_answer(ref)
+                norm_refs.append(norm_ref)
+        except Exception as e:
+            print(f"Warning: Error normalizing reference '{ref}': {e}")
+            norm_refs.append(str(ref).lower().strip() if ref else "")
+    
+    if not norm_refs:
+        return 0.0
     
     match_count = norm_refs.count(norm_pred)
     vqa_score = min(match_count / 3.0, 1.0)
@@ -1090,34 +1120,8 @@ def compute_metrics(predictions, references_or_multi_answers, tokenizer=None):
         return compute_metrics_with_multiple_answers(predictions, references_or_multi_answers, tokenizer)
     else:
         single_answers_as_lists = [[ref] for ref in references_or_multi_answers]
-        multi_metrics = compute_metrics_with_multiple_answers(predictions, single_answers_as_lists, tokenizer)
-        
-        if 'vqa_score' in multi_metrics:
-            multi_metrics['single_answer_vqa_score'] = multi_metrics['vqa_score']
-        
-        norm_preds = [normalize_vietnamese_answer(pred) for pred in predictions]
-        norm_refs = [normalize_vietnamese_answer(ref) for ref in references_or_multi_answers]
-        
-        traditional_metrics = {}
-        
-        exact_matches = [pred == ref for pred, ref in zip(norm_preds, norm_refs)]
-        traditional_metrics['exact_accuracy'] = sum(exact_matches) / len(exact_matches)
-        
-        fuzzy_scores = []
-        for pred, ref in zip(norm_preds, norm_refs):
-            if pred == ref:
-                fuzzy_scores.append(1.0)
-            elif pred in ref or ref in pred:
-                fuzzy_scores.append(0.8)
-            else:
-                similarity = SequenceMatcher(None, pred, ref).ratio()
-                fuzzy_scores.append(similarity)
-        
-        traditional_metrics['fuzzy_accuracy'] = sum(fuzzy_scores) / len(fuzzy_scores)
-        
-        multi_metrics.update(traditional_metrics)
-        
-        return multi_metrics
+        # FIX: Call directly without recursion
+        return compute_metrics_with_multiple_answers(predictions, single_answers_as_lists, tokenizer)
 
 # Data augmentation functions (unchanged)
 def augment_question(question, augment_ratio=0.2):
@@ -1141,14 +1145,24 @@ def normalize_vietnamese_answer(answer):
     if not isinstance(answer, str):
         answer = str(answer)
     
-    answer = unicodedata.normalize('NFC', answer)
-    answer = answer.lower().strip()
+    # FIX: Handle None/empty cases
+    if not answer or answer.strip() == '':
+        return ''
     
-    answer = re.sub(r'[.,!?;:"\'()[\]{}]', '', answer)
-    answer = re.sub(r'\s+', ' ', answer).strip()
-    
-    vietnamese_stopwords = ['các', 'của', 'và', 'là', 'trong', 'với', 'để', 'được', 'một', 'này', 'đó']
-    words = answer.split()
-    filtered_words = [w for w in words if w not in vietnamese_stopwords or len(words) <= 2]
-    
-    return ' '.join(filtered_words) if filtered_words else answer
+    try:
+        answer = unicodedata.normalize('NFC', answer)
+        answer = answer.lower().strip()
+        
+        # FIX: Escape regex pattern properly
+        answer = re.sub(r'[.,!?;:"\'()\[\]{}]', '', answer)  # Escape square brackets
+        answer = re.sub(r'\s+', ' ', answer).strip()
+        
+        vietnamese_stopwords = ['các', 'của', 'và', 'là', 'trong', 'với', 'để', 'được', 'một', 'này', 'đó']
+        words = answer.split()
+        filtered_words = [w for w in words if w not in vietnamese_stopwords or len(words) <= 2]
+        
+        return ' '.join(filtered_words) if filtered_words else answer
+        
+    except Exception as e:
+        print(f"Warning: Error normalizing answer '{answer}': {e}")
+        return str(answer).lower().strip()
