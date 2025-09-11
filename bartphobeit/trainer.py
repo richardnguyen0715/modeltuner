@@ -7,10 +7,15 @@ from tqdm import tqdm
 import os
 import json
 import glob
+import warnings  # ADD: Missing import
+import math      # ADD: Missing import
 from collections import defaultdict
 import wandb
 from datetime import datetime
 from bartphobeit.model import ImprovedVietnameseVQAModel, normalize_vietnamese_answer, compute_metrics
+
+# Suppress warnings for cleaner output
+warnings.filterwarnings('ignore')
 
 # Install required packages for evaluation
 try:
@@ -27,7 +32,7 @@ except ImportError:
     BLEU_ROUGE_AVAILABLE = False
 
 class ImprovedVQATrainer:
-    """Enhanced trainer with Full BART, Block-wise Masking, and WUPS metrics"""
+    """Enhanced trainer with resume training functionality"""
     
     def __init__(self, model, train_loader, val_loader, device, config):
         self.model = model
@@ -36,9 +41,10 @@ class ImprovedVQATrainer:
         self.device = device
         self.config = config
         
+        # Training state
         self.current_stage = 1
         self.global_step = 0
-        self.setup_optimizers_and_schedulers()
+        self.start_epoch = 0
         
         # For evaluation tracking
         self.best_vqa_score = 0
@@ -46,12 +52,19 @@ class ImprovedVQATrainer:
         self.best_fuzzy_accuracy = 0
         self.best_multi_exact_accuracy = 0
         
-        # Setup logging
-        self.setup_logging()
-        
         # Checkpoint management
         self.checkpoint_dir = "checkpoints"
         os.makedirs(self.checkpoint_dir, exist_ok=True)
+        
+        # Setup optimizers and schedulers
+        self.setup_optimizers_and_schedulers()
+        
+        # ✨ NEW: Handle resume training
+        if config.get('resume_training', False):
+            self.resume_from_checkpoint()
+        
+        # Setup logging (after potential resume to maintain wandb consistency)
+        self.setup_logging()
         
         # Evaluation metrics setup
         if BLEU_ROUGE_AVAILABLE:
@@ -65,17 +78,40 @@ class ImprovedVQATrainer:
         print(f"  Block-wise vision masking: {config.get('use_unified_masking', False)}")
         print(f"  WUPS metrics: {config.get('calculate_wups', False)}")
         print(f"  Multiway Transformer layers: {config.get('num_multiway_layers', 6)}")
+        print(f"  Resume training: {config.get('resume_training', False)}")
+        if self.start_epoch > 0:
+            print(f"  Resuming from epoch: {self.start_epoch + 1}")
+            print(f"  Current stage: {self.current_stage}")
+            print(f"  Global step: {self.global_step}")
+    
     
     def setup_logging(self):
-        """Setup enhanced wandb logging with BARTPhoBEiT project name"""
+        """Setup enhanced wandb logging với resume support"""
         if self.config.get('use_wandb', False):
             try:
+                # Generate unique run name
+                run_name = f"BARTPhoBEiT_WUPS_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                if self.start_epoch > 0:
+                    run_name += f"_resumed_epoch_{self.start_epoch + 1}"
+                
                 wandb.init(
                     project=self.config.get('project_name', 'BARTPhoBEiT-Vietnamese-VQA'),
                     config=self.config,
-                    name=f"BARTPhoBEiT_WUPS_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-                    tags=["BARTPhoBEiT", "Vietnamese-VQA", "WUPS", "Block-Masking", "Full-BART"]
+                    name=run_name,
+                    tags=["BARTPhoBEiT", "Vietnamese-VQA", "WUPS", "Block-Masking", "Full-BART"],
+                    resume="allow"  # Allow resuming wandb runs
                 )
+                
+                # Log resume information
+                if self.start_epoch > 0:
+                    wandb.log({
+                        'resumed_from_epoch': self.start_epoch + 1,
+                        'resumed_global_step': self.global_step,
+                        'resumed_stage': self.current_stage,
+                        'resumed_best_vqa': self.best_vqa_score,
+                        'resumed_best_wups': self.best_wups_09
+                    })
+                
                 self.use_wandb = True
                 print("✓ Enhanced wandb logging initialized")
             except Exception as e:
@@ -85,7 +121,7 @@ class ImprovedVQATrainer:
             self.use_wandb = False
     
     def setup_optimizers_and_schedulers(self):
-        """Enhanced optimizer setup for Full BART architecture"""
+        """Enhanced optimizer setup với resume support"""
         
         # Group parameters by component with detailed analysis
         decoder_params = []
@@ -165,23 +201,33 @@ class ImprovedVQATrainer:
         )
         
         # Enhanced scheduler with warmup
+        remaining_epochs = self.config['num_epochs'] - self.start_epoch
+        remaining_steps = len(self.train_loader) * remaining_epochs
         total_steps = len(self.train_loader) * self.config['num_epochs']
         warmup_steps = int(total_steps * self.config.get('warmup_ratio', 0.1))
         
+        # Adjust warmup if resuming
+        if self.start_epoch > 0:
+            completed_steps = len(self.train_loader) * self.start_epoch
+            remaining_warmup = max(0, warmup_steps - completed_steps)
+        else:
+            remaining_warmup = warmup_steps
+        
         self.scheduler = get_linear_schedule_with_warmup(
             self.optimizer,
-            num_warmup_steps=warmup_steps,
-            num_training_steps=total_steps
+            num_warmup_steps=remaining_warmup,
+            num_training_steps=remaining_steps
         )
         
         print(f"\nEnhanced Full BART optimizer setup:")
         print(f"  Total parameter groups: {len(param_groups)}")
-        print(f"  Total training steps: {total_steps:,}")
-        print(f"  Warmup steps: {warmup_steps:,} ({self.config.get('warmup_ratio', 0.1)*100:.1f}%)")
+        print(f"  Remaining training steps: {remaining_steps:,}")
+        print(f"  Remaining warmup steps: {remaining_warmup:,}")
         
         for group in param_groups:
             count = param_analysis[group['name'].split('_')[0] if '_' in group['name'] else group['name']]
             print(f"  {group['name']}: {len(group['params'])} param tensors, {count:,} params, lr={group['lr']:.2e}")
+    
     
     def evaluate_with_wups(self):
         """Enhanced evaluation with WUPS and comprehensive metrics"""
@@ -290,15 +336,23 @@ class ImprovedVQATrainer:
         if 'multi_exact_matches' in metrics:
             print(f"    Exact matches: {metrics['multi_exact_matches']}/{metrics.get('total_samples', 0)}")
         
-        # Compare single vs multi-answer performance
+        # Compare single vs multi-answer performance - FIX: Handle division by zero
         if 'single_exact_accuracy' in metrics:
             single_acc = metrics.get('single_exact_accuracy', 0)
             multi_acc = metrics.get('multi_exact_accuracy', 0)
             improvement = multi_acc - single_acc
-            print(f"    Multi-answer improvement: +{improvement:.4f} ({improvement/single_acc*100:.1f}%)")
+            
+            # FIX: Safe division to avoid ZeroDivisionError
+            if single_acc > 0:
+                improvement_percent = (improvement / single_acc) * 100
+                print(f"    Multi-answer improvement: +{improvement:.4f} ({improvement_percent:.1f}%)")
+            else:
+                print(f"    Multi-answer improvement: +{improvement:.4f} (baseline: 0.0%)")
+                print(f"    Single accuracy is 0, so percentage improvement is undefined")
+
     
     def save_enhanced_checkpoint(self, epoch, metrics, is_best_vqa=False, is_best_wups=False, is_best_fuzzy=False):
-        """Enhanced checkpoint saving with multiple best models"""
+        """Enhanced checkpoint saving với resume support"""
         checkpoint = {
             'epoch': epoch,
             'global_step': self.global_step,
@@ -311,7 +365,15 @@ class ImprovedVQATrainer:
             'best_scores': {
                 'vqa_score': self.best_vqa_score,
                 'wups_0.9': self.best_wups_09,
-                'fuzzy_accuracy': self.best_fuzzy_accuracy
+                'fuzzy_accuracy': self.best_fuzzy_accuracy,
+                'multi_exact_accuracy': self.best_multi_exact_accuracy
+            },
+            # Additional resume metadata
+            'resume_metadata': {
+                'save_time': datetime.now().isoformat(),
+                'pytorch_version': torch.__version__,
+                'model_architecture': 'BARTPhoBEiT',
+                'training_complete': False
             }
         }
         
@@ -345,6 +407,221 @@ class ImprovedVQATrainer:
         
         return checkpoint_path
     
+    def find_latest_checkpoint(self):
+        """Tìm checkpoint mới nhất"""
+        checkpoint_patterns = [
+            os.path.join(self.checkpoint_dir, 'checkpoint_epoch_*.pth'),
+            'checkpoint_epoch_*.pth',
+            'best_vqa_model.pth',
+            'best_wups_model.pth',
+            'best_fuzzy_model.pth'
+        ]
+        
+        latest_checkpoint = None
+        latest_epoch = -1
+        
+        for pattern in checkpoint_patterns:
+            checkpoints = glob.glob(pattern)
+            
+            for checkpoint_path in checkpoints:
+                try:
+                    # Extract epoch from filename
+                    filename = os.path.basename(checkpoint_path)
+                    
+                    if 'checkpoint_epoch_' in filename:
+                        epoch_str = filename.replace('checkpoint_epoch_', '').replace('.pth', '')
+                        epoch = int(epoch_str) - 1  # Convert to 0-based
+                    elif 'best_' in filename:
+                        # Try to load and get epoch from checkpoint
+                        checkpoint = torch.load(checkpoint_path, map_location='cpu')
+                        epoch = checkpoint.get('epoch', -1)
+                    else:
+                        continue
+                    
+                    if epoch > latest_epoch:
+                        latest_epoch = epoch
+                        latest_checkpoint = checkpoint_path
+                        
+                except (ValueError, Exception) as e:
+                    print(f"Warning: Could not parse checkpoint {checkpoint_path}: {e}")
+                    continue
+        
+        return latest_checkpoint, latest_epoch
+
+    
+    def load_checkpoint(self, checkpoint_path):
+        """Load checkpoint với error handling tốt"""
+        print(f"\n{'='*60}")
+        print(f"LOADING CHECKPOINT: {checkpoint_path}")
+        print(f"{'='*60}")
+        
+        try:
+            # Load checkpoint
+            checkpoint = torch.load(checkpoint_path, map_location=self.device)
+            
+            # Print checkpoint info
+            print(f"Checkpoint information:")
+            print(f"  File: {os.path.basename(checkpoint_path)}")
+            print(f"  Epoch: {checkpoint.get('epoch', 'Unknown')}")
+            print(f"  Global step: {checkpoint.get('global_step', 'Unknown')}")
+            print(f"  Stage: {checkpoint.get('current_stage', 'Unknown')}")
+            
+            # Load model state
+            missing_keys, unexpected_keys = self.model.load_state_dict(
+                checkpoint['model_state_dict'], 
+                strict=self.config.get('resume_strict', True)
+            )
+            
+            if missing_keys:
+                print(f"Warning: Missing keys in model state dict: {missing_keys}")
+            if unexpected_keys:
+                print(f"Warning: Unexpected keys in model state dict: {unexpected_keys}")
+            
+            print(f"✓ Model state loaded successfully")
+            
+            # Load training state
+            self.start_epoch = checkpoint.get('epoch', 0)
+            self.global_step = checkpoint.get('global_step', 0)
+            self.current_stage = checkpoint.get('current_stage', 1)
+            
+            # Load best scores if available
+            if self.config.get('resume_best_scores', True) and 'best_scores' in checkpoint:
+                best_scores = checkpoint['best_scores']
+                self.best_vqa_score = best_scores.get('vqa_score', 0)
+                self.best_wups_09 = best_scores.get('wups_0.9', 0)
+                self.best_fuzzy_accuracy = best_scores.get('fuzzy_accuracy', 0)
+                
+                print(f"✓ Best scores restored:")
+                print(f"    VQA Score: {self.best_vqa_score:.4f}")
+                print(f"    WUPS-0.9: {self.best_wups_09:.4f}")
+                print(f"    Fuzzy Accuracy: {self.best_fuzzy_accuracy:.4f}")
+            
+            # Load optimizer state (optional)
+            if not self.config.get('reset_optimizer_on_resume', False):
+                if 'optimizer_state_dict' in checkpoint:
+                    try:
+                        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+                        print(f"✓ Optimizer state loaded")
+                    except Exception as e:
+                        print(f"Warning: Could not load optimizer state: {e}")
+                        print(f"Continuing with fresh optimizer...")
+            else:
+                print(f"✓ Optimizer state reset (as requested)")
+            
+            # Load scheduler state (optional)
+            if not self.config.get('reset_scheduler_on_resume', False):
+                if 'scheduler_state_dict' in checkpoint:
+                    try:
+                        self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+                        print(f"✓ Scheduler state loaded")
+                    except Exception as e:
+                        print(f"Warning: Could not load scheduler state: {e}")
+                        print(f"Continuing with fresh scheduler...")
+            else:
+                print(f"✓ Scheduler state reset (as requested)")
+            
+            # Load metrics if available
+            if 'metrics' in checkpoint:
+                last_metrics = checkpoint['metrics']
+                print(f"✓ Last evaluation metrics:")
+                print(f"    VQA Score: {last_metrics.get('vqa_score', 'N/A')}")
+                print(f"    WUPS-0.9: {last_metrics.get('wups_0.9', 'N/A')}")
+                print(f"    Multi Fuzzy: {last_metrics.get('multi_fuzzy_accuracy', 'N/A')}")
+            
+            print(f"\n✅ CHECKPOINT LOADED SUCCESSFULLY")
+            print(f"Will resume training from epoch {self.start_epoch + 1}")
+            
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error loading checkpoint: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def resume_from_checkpoint(self):
+        """Main resume functionality"""
+        resume_config = self.config.get('resume_from_checkpoint')
+        auto_resume = self.config.get('auto_resume', True)
+        
+        checkpoint_path = None
+        
+        # Determine checkpoint path
+        if resume_config == 'latest' or (resume_config is None and auto_resume):
+            # Auto-detect latest checkpoint
+            print("🔍 Auto-detecting latest checkpoint...")
+            checkpoint_path, latest_epoch = self.find_latest_checkpoint()
+            
+            if checkpoint_path:
+                print(f"✓ Found latest checkpoint: {os.path.basename(checkpoint_path)} (epoch {latest_epoch + 1})")
+            else:
+                print("ℹ️  No checkpoint found for auto-resume")
+                return
+                
+        elif resume_config and os.path.exists(resume_config):
+            # Specific checkpoint path provided
+            checkpoint_path = resume_config
+            print(f"📁 Using specified checkpoint: {os.path.basename(checkpoint_path)}")
+            
+        elif resume_config:
+            print(f"❌ Specified checkpoint not found: {resume_config}")
+            return
+        
+        # Load the checkpoint
+        if checkpoint_path:
+            success = self.load_checkpoint(checkpoint_path)
+            
+            if not success:
+                print(f"⚠️  Failed to load checkpoint, starting from scratch")
+                self.start_epoch = 0
+                self.global_step = 0
+                self.current_stage = 1
+            else:
+                # Handle stage transitions if necessary
+                if self.current_stage == 1 and self.start_epoch >= self.config['stage1_epochs']:
+                    print(f"🔄 Checkpoint was in stage 1, but should be in stage 2")
+                    print(f"Transitioning to stage 2...")
+                    self.model.partial_unfreeze(self.config['unfreeze_last_n_layers'])
+                    self.current_stage = 2
+                    
+                    # Recreate optimizer for stage 2
+                    print(f"Recreating optimizer for stage 2...")
+                    self.setup_optimizers_and_schedulers()
+    
+    
+    def save_final_checkpoint(self, final_metrics):
+        """Save final checkpoint khi training hoàn thành"""
+        final_checkpoint = {
+            'epoch': self.config['num_epochs'] - 1,
+            'global_step': self.global_step,
+            'model_state_dict': self.model.state_dict(),
+            'optimizer_state_dict': self.optimizer.state_dict(),
+            'scheduler_state_dict': self.scheduler.state_dict(),
+            'config': self.config,
+            'metrics': final_metrics,
+            'current_stage': self.current_stage,
+            'best_scores': {
+                'vqa_score': self.best_vqa_score,
+                'wups_0.9': self.best_wups_09,
+                'fuzzy_accuracy': self.best_fuzzy_accuracy,
+                'multi_exact_accuracy': self.best_multi_exact_accuracy
+            },
+            'resume_metadata': {
+                'save_time': datetime.now().isoformat(),
+                'pytorch_version': torch.__version__,
+                'model_architecture': 'BARTPhoBEiT',
+                'training_complete': True,  # Mark as completed
+                'total_epochs': self.config['num_epochs']
+            }
+        }
+        
+        final_path = f"final_model_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pth"
+        torch.save(final_checkpoint, final_path)
+        
+        print(f"💾 Final model saved: {final_path}")
+        return final_path
+    
+    
     def cleanup_checkpoints(self):
         """Keep only the last N checkpoints"""
         keep_n = self.config.get('keep_last_n_checkpoints', 5)
@@ -359,9 +636,10 @@ class ImprovedVQATrainer:
                 try:
                     os.remove(checkpoint)
                     print(f"Removed old checkpoint: {os.path.basename(checkpoint)}")
-                except:
-                    pass
-    
+                except Exception as e:  # FIX: Better error handling
+                    print(f"Failed to remove checkpoint {checkpoint}: {e}")
+
+
     def save_enhanced_predictions(self, predictions, all_correct_answers, epoch, metrics):
         """Save predictions with enhanced analysis"""
         if not self.config.get('save_predictions', True):
@@ -580,14 +858,28 @@ class ImprovedVQATrainer:
         }
     
     def train(self, num_epochs):
-        """Enhanced full training loop with WUPS metrics and comprehensive tracking"""
+        """Enhanced training loop với resume support"""
         print(f"\n{'='*80}")
         print(f"STARTING ENHANCED BARTPhoBEiT TRAINING")
         print(f"{'='*80}")
+        
+        # Enhanced training info with resume details
         print(f"Training configuration:")
         print(f"  Total epochs: {num_epochs}")
         print(f"  Stage 1 (Frozen encoders): epochs 1-{self.config['stage1_epochs']}")
         print(f"  Stage 2 (Partial unfreeze): epochs {self.config['stage1_epochs']+1}-{num_epochs}")
+        
+        if self.start_epoch > 0:
+            print(f"  🔄 RESUMING from epoch: {self.start_epoch + 1}")
+            print(f"  🔄 Current stage: {self.current_stage}")
+            print(f"  🔄 Global step: {self.global_step}")
+            print(f"  🔄 Best VQA score: {self.best_vqa_score:.4f}")
+            print(f"  🔄 Best WUPS-0.9: {self.best_wups_09:.4f}")
+            remaining_epochs = num_epochs - self.start_epoch
+            print(f"  🔄 Remaining epochs: {remaining_epochs}")
+        else:
+            print(f"  🆕 Starting from scratch")
+        
         print(f"  Full BART model: {self.config['text_model']}")
         print(f"  VQ-KD Visual Tokenizer: {self.config.get('use_vqkd', False)}")
         print(f"  Block-wise vision masking: {self.config.get('use_unified_masking', False)}")
@@ -600,134 +892,217 @@ class ImprovedVQATrainer:
             'vqa_scores': [],
             'wups_0_9_scores': [],
             'fuzzy_accuracies': [],
-            'train_losses': []
+            'train_losses': [],
+            'resume_info': {
+                'started_from_epoch': self.start_epoch,
+                'initial_best_vqa': self.best_vqa_score,
+                'initial_best_wups': self.best_wups_09
+            }
         }
         
-        for epoch in range(num_epochs):
-            print(f"\n{'='*60}")
-            print(f"EPOCH {epoch + 1}/{num_epochs}")
-            print(f"{'='*60}")
+        # FIX: Initialize epoch variable to avoid UnboundLocalError
+        epoch = self.start_epoch
+        
+        try:
+            # Start training loop from resume point
+            for epoch in range(self.start_epoch, num_epochs):
+                print(f"\n{'='*60}")
+                print(f"EPOCH {epoch + 1}/{num_epochs}")
+                if self.start_epoch > 0 and epoch == self.start_epoch:
+                    print(f"🔄 RESUMED TRAINING")
+                print(f"{'='*60}")
+                
+                # Enhanced training epoch
+                train_metrics = self.train_epoch_enhanced(epoch)
+                
+                # Enhanced evaluation with WUPS
+                print(f"\nRunning enhanced evaluation...")
+                val_metrics, predictions, all_correct_answers = self.evaluate_with_wups()
+                
+                # Print comprehensive results
+                self.print_enhanced_metrics(val_metrics, epoch + 1)
+                
+                # Training loss information
+                print(f"\nTraining Loss Breakdown:")
+                print(f"  Total Loss: {train_metrics['total_loss']:.4f}")
+                print(f"  Generation Loss: {train_metrics['generation_loss']:.4f}")
+                if train_metrics['vqkd_loss'] > 0:
+                    print(f"  VQ-KD Loss: {train_metrics['vqkd_loss']:.4f}")
+                
+                # Track best models
+                current_vqa = val_metrics.get('vqa_score', 0)
+                current_wups_09 = val_metrics.get('wups_0.9', 0)
+                current_fuzzy = val_metrics.get('multi_fuzzy_accuracy', 0)
+                current_exact = val_metrics.get('multi_exact_accuracy', 0)
+                
+                is_best_vqa = current_vqa > self.best_vqa_score
+                is_best_wups = current_wups_09 > self.best_wups_09
+                is_best_fuzzy = current_fuzzy > self.best_fuzzy_accuracy
+                
+                if is_best_vqa:
+                    self.best_vqa_score = current_vqa
+                if is_best_wups:
+                    self.best_wups_09 = current_wups_09
+                if is_best_fuzzy:
+                    self.best_fuzzy_accuracy = current_fuzzy
+                    self.best_multi_exact_accuracy = current_exact
+                
+                # Enhanced wandb logging
+                if self.use_wandb:
+                    comprehensive_log = {
+                        'epoch': epoch + 1,
+                        'train_total_loss': train_metrics['total_loss'],
+                        'train_generation_loss': train_metrics['generation_loss'],
+                        'val_vqa_score': current_vqa,
+                        'val_wups_0_0': val_metrics.get('wups_0.0', 0),
+                        'val_wups_0_9': current_wups_09,
+                        'val_multi_fuzzy_accuracy': current_fuzzy,
+                        'val_multi_exact_accuracy': current_exact,
+                        'val_multi_token_f1': val_metrics.get('multi_token_f1', 0),
+                        'val_multi_bleu': val_metrics.get('multi_bleu', 0),
+                        'val_multi_rouge_l': val_metrics.get('multi_rouge_l', 0),
+                        'best_vqa_score': self.best_vqa_score,
+                        'best_wups_0_9': self.best_wups_09,
+                        'best_fuzzy_accuracy': self.best_fuzzy_accuracy,
+                        'current_stage': self.current_stage
+                    }
+                    
+                    if train_metrics['vqkd_loss'] > 0:
+                        comprehensive_log['train_vqkd_loss'] = train_metrics['vqkd_loss']
+                    
+                    # VQA score distribution
+                    if 'vqa_perfect_count' in val_metrics:
+                        total_samples = val_metrics['total_samples']
+                        comprehensive_log.update({
+                            'vqa_perfect_ratio': val_metrics['vqa_perfect_count'] / total_samples,
+                            'vqa_partial_ratio': val_metrics.get('vqa_partial_count', 0) / total_samples,
+                            'vqa_zero_ratio': val_metrics.get('vqa_zero_count', 0) / total_samples
+                        })
+                    
+                    wandb.log(comprehensive_log)
+                
+                # Save enhanced checkpoints
+                if (epoch + 1) % self.config.get('save_every_n_epochs', 1) == 0:
+                    checkpoint_path = self.save_enhanced_checkpoint(
+                        epoch, val_metrics, is_best_vqa, is_best_wups, is_best_fuzzy
+                    )
+                    print(f"Checkpoint saved: {os.path.basename(checkpoint_path)}")
+                
+                # Save enhanced predictions
+                self.save_enhanced_predictions(predictions, all_correct_answers, epoch, val_metrics)
+                
+                # Update training history
+                training_history['epochs'].append(epoch + 1)
+                training_history['vqa_scores'].append(current_vqa)
+                training_history['wups_0_9_scores'].append(current_wups_09)
+                training_history['fuzzy_accuracies'].append(current_fuzzy)
+                training_history['train_losses'].append(train_metrics['total_loss'])
+                
+                # Print improvement notifications
+                improvements = []
+                if is_best_vqa:
+                    improvements.append(f"VQA Score: {self.best_vqa_score:.4f}")
+                if is_best_wups:
+                    improvements.append(f"WUPS-0.9: {self.best_wups_09:.4f}")
+                if is_best_fuzzy:
+                    improvements.append(f"Fuzzy Accuracy: {self.best_fuzzy_accuracy:.4f}")
+                
+                if improvements:
+                    print(f"\n🎉 New best results: {', '.join(improvements)}")
+        
+        except KeyboardInterrupt:
+            print(f"\n⚠️  Training interrupted by user at epoch {epoch + 1}")
+            print(f"Saving interruption checkpoint...")
             
-            # Enhanced training epoch
-            train_metrics = self.train_epoch_enhanced(epoch)
-            
-            # Enhanced evaluation with WUPS
-            print(f"\nRunning enhanced evaluation...")
-            val_metrics, predictions, all_correct_answers = self.evaluate_with_wups()
-            
-            # Print comprehensive results
-            self.print_enhanced_metrics(val_metrics, epoch + 1)
-            
-            # Training loss information
-            print(f"\nTraining Loss Breakdown:")
-            print(f"  Total Loss: {train_metrics['total_loss']:.4f}")
-            print(f"  Generation Loss: {train_metrics['generation_loss']:.4f}")
-            if train_metrics['vqkd_loss'] > 0:
-                print(f"  VQ-KD Loss: {train_metrics['vqkd_loss']:.4f}")
-            
-            # Track best models
-            current_vqa = val_metrics.get('vqa_score', 0)
-            current_wups_09 = val_metrics.get('wups_0.9', 0)
-            current_fuzzy = val_metrics.get('multi_fuzzy_accuracy', 0)
-            current_exact = val_metrics.get('multi_exact_accuracy', 0)
-            
-            is_best_vqa = current_vqa > self.best_vqa_score
-            is_best_wups = current_wups_09 > self.best_wups_09
-            is_best_fuzzy = current_fuzzy > self.best_fuzzy_accuracy
-            
-            if is_best_vqa:
-                self.best_vqa_score = current_vqa
-            if is_best_wups:
-                self.best_wups_09 = current_wups_09
-            if is_best_fuzzy:
-                self.best_fuzzy_accuracy = current_fuzzy
-                self.best_multi_exact_accuracy = current_exact
-            
-            # Enhanced wandb logging
-            if self.use_wandb:
-                comprehensive_log = {
-                    'epoch': epoch + 1,
-                    'train_total_loss': train_metrics['total_loss'],
-                    'train_generation_loss': train_metrics['generation_loss'],
-                    'val_vqa_score': current_vqa,
-                    'val_wups_0_0': val_metrics.get('wups_0.0', 0),
-                    'val_wups_0_9': current_wups_09,
-                    'val_multi_fuzzy_accuracy': current_fuzzy,
-                    'val_multi_exact_accuracy': current_exact,
-                    'val_multi_token_f1': val_metrics.get('multi_token_f1', 0),
-                    'val_multi_bleu': val_metrics.get('multi_bleu', 0),
-                    'val_multi_rouge_l': val_metrics.get('multi_rouge_l', 0),
-                    'best_vqa_score': self.best_vqa_score,
-                    'best_wups_0_9': self.best_wups_09,
-                    'best_fuzzy_accuracy': self.best_fuzzy_accuracy,
-                    'current_stage': self.current_stage
+            # Save emergency checkpoint
+            try:
+                emergency_checkpoint = {
+                    'epoch': epoch,
+                    'global_step': self.global_step,
+                    'model_state_dict': self.model.state_dict(),
+                    'optimizer_state_dict': self.optimizer.state_dict(),
+                    'scheduler_state_dict': self.scheduler.state_dict(),
+                    'config': self.config,
+                    'current_stage': self.current_stage,
+                    'best_scores': {
+                        'vqa_score': self.best_vqa_score,
+                        'wups_0.9': self.best_wups_09,
+                        'fuzzy_accuracy': self.best_fuzzy_accuracy
+                    },
+                    'resume_metadata': {
+                        'save_time': datetime.now().isoformat(),
+                        'interrupted_at_epoch': epoch + 1,
+                        'training_complete': False,
+                        'reason': 'keyboard_interrupt'
+                    }
                 }
                 
-                if train_metrics['vqkd_loss'] > 0:
-                    comprehensive_log['train_vqkd_loss'] = train_metrics['vqkd_loss']
+                interruption_path = f"interrupted_checkpoint_epoch_{epoch + 1}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pth"
+                torch.save(emergency_checkpoint, interruption_path)
+                print(f"✅ Interruption checkpoint saved: {interruption_path}")
+                print(f"💡 You can resume training by setting:")
+                print(f"   config['resume_training'] = True")
+                print(f"   config['resume_from_checkpoint'] = '{interruption_path}'")
                 
-                # VQA score distribution
-                if 'vqa_perfect_count' in val_metrics:
-                    total_samples = val_metrics['total_samples']
-                    comprehensive_log.update({
-                        'vqa_perfect_ratio': val_metrics['vqa_perfect_count'] / total_samples,
-                        'vqa_partial_ratio': val_metrics.get('vqa_partial_count', 0) / total_samples,
-                        'vqa_zero_ratio': val_metrics.get('vqa_zero_count', 0) / total_samples
-                    })
-                
-                wandb.log(comprehensive_log)
+            except Exception as save_e:
+                print(f"❌ Failed to save interruption checkpoint: {save_e}")
             
-            # Save enhanced checkpoints
-            if (epoch + 1) % self.config.get('save_every_n_epochs', 1) == 0:
-                checkpoint_path = self.save_enhanced_checkpoint(
-                    epoch, val_metrics, is_best_vqa, is_best_wups, is_best_fuzzy
-                )
-                print(f"Checkpoint saved: {os.path.basename(checkpoint_path)}")
-            
-            # Save enhanced predictions
-            self.save_enhanced_predictions(predictions, all_correct_answers, epoch, val_metrics)
-            
-            # Update training history
-            training_history['epochs'].append(epoch + 1)
-            training_history['vqa_scores'].append(current_vqa)
-            training_history['wups_0_9_scores'].append(current_wups_09)
-            training_history['fuzzy_accuracies'].append(current_fuzzy)
-            training_history['train_losses'].append(train_metrics['total_loss'])
-            
-            # Print improvement notifications
-            improvements = []
-            if is_best_vqa:
-                improvements.append(f"VQA Score: {self.best_vqa_score:.4f}")
-            if is_best_wups:
-                improvements.append(f"WUPS-0.9: {self.best_wups_09:.4f}")
-            if is_best_fuzzy:
-                improvements.append(f"Fuzzy Accuracy: {self.best_fuzzy_accuracy:.4f}")
-            
-            if improvements:
-                print(f"\n🎉 New best results: {', '.join(improvements)}")
+            return self.best_vqa_score
         
-        # Final comprehensive summary
+        except Exception as e:
+            print(f"\n❌ Error during training: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Try to save emergency checkpoint
+            try:
+                print(f"Attempting to save emergency checkpoint...")
+                emergency_path = f"emergency_checkpoint_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pth"
+                torch.save({
+                    'model_state_dict': self.model.state_dict(),
+                    'config': self.config,
+                    'error': str(e),
+                    'epoch': epoch,
+                    'global_step': self.global_step
+                }, emergency_path)
+                print(f"✅ Emergency checkpoint saved: {emergency_path}")
+            except Exception as emergency_e:
+                print(f"❌ Failed to save emergency checkpoint: {emergency_e}")
+            
+            return self.best_vqa_score
+        
+        # Training completed successfully
         print(f"\n{'='*80}")
-        print(f"ENHANCED TRAINING COMPLETED!")
+        print(f"ENHANCED TRAINING COMPLETED SUCCESSFULLY!")
         print(f"{'='*80}")
-        print(f"Final Best Results:")
-        print(f"  🏆 Best VQA Score: {self.best_vqa_score:.4f}")
-        print(f"  🏆 Best WUPS-0.9: {self.best_wups_09:.4f}")
-        print(f"  🏆 Best Fuzzy Accuracy: {self.best_fuzzy_accuracy:.4f}")
-        print(f"  🏆 Best Multi Exact Accuracy: {self.best_multi_exact_accuracy:.4f}")
         
-        print(f"\nSaved Models:")
-        print(f"  📁 best_vqa_model.pth - Best VQA Score model")
-        print(f"  📁 best_wups_model.pth - Best WUPS-0.9 model")
-        print(f"  📁 best_fuzzy_model.pth - Best Fuzzy Accuracy model")
+        # Final evaluation and saving
+        try:
+            final_metrics, final_predictions, final_references = self.evaluate_with_wups()
+            self.save_final_checkpoint(final_metrics)
+            
+            print(f"🏆 Final Results:")
+            print(f"  Best VQA Score: {self.best_vqa_score:.4f}")
+            print(f"  Best WUPS-0.9: {self.best_wups_09:.4f}")
+            print(f"  Best Fuzzy Accuracy: {self.best_fuzzy_accuracy:.4f}")
+            print(f"  Best Multi Exact Accuracy: {self.best_multi_exact_accuracy:.4f}")
+            
+        except Exception as e:
+            print(f"Warning: Final evaluation failed: {e}")
         
-        print(f"\nModel Enhancements Applied:")
-        print(f"  ✅ Full BART encoder-decoder architecture")
-        print(f"  ✅ VQ-KD Visual Tokenizer: {self.config.get('use_vqkd', False)}")
-        print(f"  ✅ Block-wise vision masking (40% patches)")
-        print(f"  ✅ Multiway Transformer fusion ({self.config.get('num_multiway_layers', 6)} layers)")
+        print(f"\n📁 Saved Models:")
+        print(f"  🥇 best_vqa_model.pth - Best VQA Score model")
+        print(f"  🥈 best_wups_model.pth - Best WUPS-0.9 model")
+        print(f"  🥉 best_fuzzy_model.pth - Best Fuzzy Accuracy model")
+        
+        print(f"\n🎯 Enhanced Features Applied:")
+        print(f"  ✅ Full BART encoder-decoder ({self.config['text_model']})")
+        print(f"  ✅ Block-wise vision masking ({self.config.get('vision_mask_ratio', 0.4)*100:.0f}% patches)")
         print(f"  ✅ WUPS 0.0 and 0.9 metrics evaluation")
+        print(f"  ✅ VQ-KD Visual Tokenizer")
+        print(f"  ✅ Multiway Transformer fusion")
         print(f"  ✅ Enhanced Vietnamese VQA evaluation")
+        print(f"  ✅ Resume training capability")
         
         # Save training history
         history_file = f"training_history_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
@@ -743,8 +1118,9 @@ class ImprovedVQATrainer:
                 'final_best_wups_0_9': self.best_wups_09,
                 'final_best_fuzzy_accuracy': self.best_fuzzy_accuracy,
                 'final_best_multi_exact_accuracy': self.best_multi_exact_accuracy,
-                'total_epochs': num_epochs
+                'total_epochs_completed': num_epochs,
+                'training_completed': True
             })
             wandb.finish()
         
-        return self.best_vqa_score  # Return primary metric
+        return self.best_vqa_score

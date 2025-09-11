@@ -433,7 +433,33 @@ def main():
     # Load and validate configuration
     config = get_improved_config()
     config = validate_full_bart_config(config)
+
+    config['resume_training'] = True
+    config['auto_resume'] = True
     
+    # Option 2: Resume from specific checkpoint
+    # config['resume_training'] = True
+    # config['resume_from_checkpoint'] = 'checkpoints/checkpoint_epoch_5.pth'
+    
+    # Option 3: Resume from best model
+    # config['resume_training'] = True
+    # config['resume_from_checkpoint'] = 'best_vqa_model.pth'
+    
+    # Option 4: Fresh start (disable resume)
+    # config['resume_training'] = False
+    
+    # Resume options
+    # config['reset_optimizer_on_resume'] = False  # Keep optimizer state
+    # config['reset_scheduler_on_resume'] = False  # Keep scheduler state
+    # config['resume_best_scores'] = True  # Restore best scores
+    
+    print(f"\nResume Training Configuration:")
+    print(f"  Resume enabled: {config.get('resume_training', False)}")
+    print(f"  Auto-resume: {config.get('auto_resume', True)}")
+    print(f"  Resume from: {config.get('resume_from_checkpoint', 'auto-detect')}")
+    print(f"  Reset optimizer: {config.get('reset_optimizer_on_resume', False)}")
+    print(f"  Reset scheduler: {config.get('reset_scheduler_on_resume', False)}")
+
     print(f"\nUsing device: {config['device']}")
     
     # Test tokenizers
@@ -451,7 +477,7 @@ def main():
     # Load and prepare data
     print(f"\nLoading Vietnamese VQA dataset...")
     try:
-        df = pd.read_csv('/root/modeltuner/modeltuner/data/text/evaluate_60k_data_balanced.csv')
+        df = pd.read_csv('/home/tgng/coding/modeltuner/data/text/evaluate_60k_data_balanced.csv')
         print(f"✅ Dataset loaded: {len(df)} samples")
         
         questions = prepare_data_from_dataframe(df)
@@ -580,10 +606,24 @@ def main():
         return
     
     # Initialize enhanced trainer
-    print(f"\nInitializing Enhanced Trainer with WUPS metrics...")
+    print(f"\nInitializing Enhanced Trainer with Resume Support...")
     try:
         trainer = ImprovedVQATrainer(model, train_loader, val_loader, config['device'], config)
-        print(f"✅ Enhanced trainer initialized")
+        print(f"✅ Enhanced trainer with resume support initialized")
+        
+        # Show resume status
+        if trainer.start_epoch > 0:
+            print(f"\n🔄 TRAINING WILL RESUME:")
+            print(f"   From epoch: {trainer.start_epoch + 1}")
+            print(f"   Current stage: {trainer.current_stage}")
+            print(f"   Global step: {trainer.global_step}")
+            print(f"   Best VQA score: {trainer.best_vqa_score:.4f}")
+            remaining_epochs = config['num_epochs'] - trainer.start_epoch
+            print(f"   Remaining epochs: {remaining_epochs}")
+        else:
+            print(f"\n🆕 STARTING FRESH TRAINING:")
+            print(f"   Total epochs: {config['num_epochs']}")
+            print(f"   No checkpoint found or resume disabled")
         
     except Exception as e:
         print(f"❌ Trainer initialization failed: {e}")
@@ -591,40 +631,13 @@ def main():
         traceback.print_exc()
         return
     
-    # # Pre-training validation
-    # print(f"\nRunning pre-training validation with WUPS metrics...")
-    # try:
-    #     pre_metrics, pre_predictions, pre_references = trainer.evaluate_with_wups()
-    #     print(f"Pre-training Results:")
-    #     print(f"  VQA Score: {pre_metrics.get('vqa_score', 0.0):.4f}")
-    #     print(f"  WUPS 0.0: {pre_metrics.get('wups_0.0', 0.0):.4f}")
-    #     print(f"  WUPS 0.9: {pre_metrics.get('wups_0.9', 0.0):.4f}")
-    #     print(f"  Multi Fuzzy Accuracy: {pre_metrics.get('multi_fuzzy_accuracy', 0.0):.4f}")
-    #     print(f"  Multi Exact Accuracy: {pre_metrics.get('multi_exact_accuracy', 0.0):.4f}")
-        
-    # except Exception as e:
-    #     print(f"⚠️  Pre-training validation failed: {e}")
-    #     print(f"   Proceeding with training anyway...")
-    
-    # Start enhanced training
+    # Start enhanced training with resume support
     print(f"\n{'='*80}")
-    print(f"STARTING ENHANCED BARTPHOBIT TRAINING")
+    print(f"STARTING ENHANCED BARTPHOBIT TRAINING WITH RESUME SUPPORT")
     print(f"{'='*80}")
-    print(f"Configuration Summary:")
-    print(f"  🎯 Architecture: Full BART ({config['text_model']})")
-    print(f"  🔧 Vision Masking: Block-wise {config.get('vision_mask_ratio', 0.4)*100:.0f}% (block size: {config.get('vision_mask_block_size', 4)})")
-    print(f"  📊 WUPS Metrics: Enabled (0.0 and 0.9 thresholds)")
-    print(f"  🧠 VQ-KD Tokenizer: {config.get('use_vqkd', False)}")
-    print(f"  🌐 Multiway Layers: {config.get('num_multiway_layers', 6)}")
-    print(f"  📚 Total epochs: {config['num_epochs']}")
-    print(f"  📖 Stage 1 (Frozen): {config['stage1_epochs']} epochs")
-    print(f"  📘 Stage 2 (Partial): {config['num_epochs'] - config['stage1_epochs']} epochs")
-    print(f"  🎛️  Learning rates: Decoder={config['decoder_lr']:.2e}, Encoder={config['encoder_lr']:.2e}, Vision={config['vision_lr']:.2e}")
-    print(f"  🎨 Data augmentation: {config.get('use_data_augmentation', False)}")
-    print(f"  📊 Wandb logging: {config.get('use_wandb', False)}")
     
     try:
-        # Start training
+        # Start training (will automatically handle resume)
         best_score = trainer.train(config['num_epochs'])
         
         print(f"\n{'='*80}")
@@ -648,38 +661,18 @@ def main():
         print(f"  ✅ VQ-KD Visual Tokenizer")
         print(f"  ✅ Multiway Transformer fusion")
         print(f"  ✅ Enhanced Vietnamese VQA evaluation")
+        print(f"  ✅ Resume training from checkpoints")
         
     except KeyboardInterrupt:
         print(f"\n⚠️  Training interrupted by user")
-        print(f"Saving current state...")
-        try:
-            trainer.save_enhanced_checkpoint(
-                trainer.global_step // len(train_loader), 
-                {}, 
-                is_best_vqa=False, 
-                is_best_wups=False, 
-                is_best_fuzzy=False
-            )
-            print(f"✅ Current state saved successfully")
-        except Exception as save_e:
-            print(f"❌ Failed to save current state: {save_e}")
+        print(f"💡 Checkpoints have been saved automatically")
+        print(f"💡 You can resume training by running the script again with:")
+        print(f"   config['resume_training'] = True")
         
     except Exception as e:
         print(f"\n❌ Error during training: {e}")
         import traceback
         traceback.print_exc()
-        
-        # Try to save emergency checkpoint
-        try:
-            print(f"Attempting to save emergency checkpoint...")
-            torch.save({
-                'model_state_dict': model.state_dict(),
-                'config': config,
-                'error': str(e)
-            }, 'emergency_checkpoint.pth')
-            print(f"✅ Emergency checkpoint saved")
-        except:
-            print(f"❌ Failed to save emergency checkpoint")
     
     print(f"\n{'='*80}")
     print(f"PROGRAM FINISHED")
