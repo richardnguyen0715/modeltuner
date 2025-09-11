@@ -388,9 +388,9 @@ def apply_block_wise_vision_masking(vision_features, mask_ratio=0.4, block_size=
         
         # Enhanced debug info
         actual_mask_ratio = total_masked_patches / actual_patches
-        print(f"  Batch {batch_idx}: {len(selected_blocks)} blocks selected, "
-              f"{total_masked_patches}/{actual_patches} patches ({actual_mask_ratio:.3f} ratio)")
-        print(f"    Target: {target_masked_patches} patches ({mask_ratio:.3f} ratio)")
+        # print(f"  Batch {batch_idx}: {len(selected_blocks)} blocks selected, "
+        #       f"{total_masked_patches}/{actual_patches} patches ({actual_mask_ratio:.3f} ratio)")
+        # print(f"    Target: {target_masked_patches} patches ({mask_ratio:.3f} ratio)")
         
         # Verify masking worked by checking some masked patches
         if total_masked_patches > 0:
@@ -398,7 +398,7 @@ def apply_block_wise_vision_masking(vision_features, mask_ratio=0.4, block_size=
             for idx in sample_masked_idx:
                 tensor_idx = idx + 1
                 patch_norm = masked_features[batch_idx, tensor_idx, :].norm().item()
-                print(f"    Masked patch {idx} (tensor idx {tensor_idx}): norm = {patch_norm:.6f}")
+                # print(f"    Masked patch {idx} (tensor idx {tensor_idx}): norm = {patch_norm:.6f}")
     
     return masked_features, mask_indicators
 

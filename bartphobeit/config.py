@@ -5,8 +5,8 @@ def get_improved_config():
     config = {
         # Model architecture
         'vision_model': 'google/vit-base-patch16-224-in21k',
-        'text_model': 'vinai/bartpho-word',
-        'decoder_model': 'vinai/bartpho-word',
+        'text_model': 'vinai/bartpho-syllable',
+        'decoder_model': 'vinai/bartpho-syllable',
         
         # Training parameters
         'batch_size': 8,

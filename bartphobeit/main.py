@@ -434,8 +434,8 @@ def main():
     config = get_improved_config()
     config = validate_full_bart_config(config)
 
-    config['resume_training'] = True
-    config['auto_resume'] = True
+    config['resume_training'] = False
+    config['auto_resume'] = False
     
     # Option 2: Resume from specific checkpoint
     # config['resume_training'] = True
