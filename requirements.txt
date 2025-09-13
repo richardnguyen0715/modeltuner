@@ -10,3 +10,8 @@ pillow
 kagglehub
 pydrive2
 SentencePiece
+jupyter
+ipykernel
+matplotlib
+seaborn
+scikit-image

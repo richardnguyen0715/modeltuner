@@ -16,3 +16,4 @@ __pycache__/
 *.pth
 client_secrets.json
 *.zip
+venv/
